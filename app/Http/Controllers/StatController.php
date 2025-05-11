@@ -24,8 +24,7 @@ class StatController extends Controller
      * @param Request $request
      * @param $id
      * @return \Illuminate\Contracts\Foundation\Application|\Illuminate\Contracts\View\Factory|\Illuminate\View\View
-     */
-    public function index(Request $request, $id)
+     */    public function index(Request $request, $id)
     {
         $website = Website::where('domain', $id)->firstOrFail();
 
@@ -33,10 +32,10 @@ class StatController extends Controller
             return view('stats.password', ['website' => $website]);
         }
 
-        $range = $this->range();
-
-        $visitorsMap = $this->getTraffic($website, $range, 'visitors');
+        $range = $this->range();        $visitorsMap = $this->getTraffic($website, $range, 'visitors');
         $pageviewsMap = $this->getTraffic($website, $range, 'pageviews');
+        $bounceRateMap = $this->getBounceRateMap($website, $range);
+        $avgSessionTimeMap = $this->getAverageSessionTimeMap($website, $range);
 
         $totalVisitors = $totalPageviews = 0;
         foreach ($visitorsMap as $key => $value) {
@@ -54,6 +53,18 @@ class StatController extends Controller
         $totalPageviewsOld = Stat::where([['website_id', '=', $website->id], ['name', '=', 'pageviews']])
             ->whereBetween('date', [$range['from_old'], $range['to_old']])
             ->sum('count');
+            
+        // Calculate bounce rates
+        $bounceRate = $this->getBounceRate($website, $range);
+        $bounceRateOld = $this->getBounceRate($website, ['from' => $range['from_old'], 'to' => $range['to_old']]);
+        
+        // Calculate average session times
+        $avgSessionTime = $this->getAverageSessionTime($website, $range);
+        $avgSessionTimeOld = $this->getAverageSessionTime($website, ['from' => $range['from_old'], 'to' => $range['to_old']]);
+        
+        // Format the average session time for display
+        $avgSessionTimeFormatted = $this->formatTime($avgSessionTime);
+        $avgSessionTimeOldFormatted = $this->formatTime($avgSessionTimeOld);
 
         $pages = $this->getPages($website, $range, null, null, 'count', 'desc')
             ->limit(5)
@@ -77,13 +88,34 @@ class StatController extends Controller
 
         $operatingSystems = $this->getOperatingSystems($website, $range, null, null, 'count', 'desc')
             ->limit(5)
-            ->get();
-
-        $events = $this->getEvents($website, $range, null, null, 'count', 'desc')
+            ->get();        $events = $this->getEvents($website, $range, null, null, 'count', 'desc')
             ->limit(5)
-            ->get();
-
-        return view('stats.container', ['view' => 'overview', 'website' => $website, 'range' => $range, 'referrers' => $referrers, 'pages' => $pages, 'visitorsMap' => $visitorsMap, 'pageviewsMap' => $pageviewsMap, 'countries' => $countries, 'browsers' => $browsers, 'operatingSystems' => $operatingSystems, 'events' => $events, 'totalVisitors' => $totalVisitors, 'totalPageviews' => $totalPageviews, 'totalVisitorsOld' => $totalVisitorsOld, 'totalPageviewsOld' => $totalPageviewsOld, 'totalReferrers' => $totalReferrers]);
+            ->get();        return view('stats.container', [
+            'view' => 'overview', 
+            'website' => $website, 
+            'range' => $range, 
+            'referrers' => $referrers, 
+            'pages' => $pages, 
+            'visitorsMap' => $visitorsMap, 
+            'pageviewsMap' => $pageviewsMap,
+            'bounceRateMap' => $bounceRateMap,
+            'avgSessionTimeMap' => $avgSessionTimeMap,
+            'countries' => $countries, 
+            'browsers' => $browsers, 
+            'operatingSystems' => $operatingSystems, 
+            'events' => $events, 
+            'totalVisitors' => $totalVisitors, 
+            'totalPageviews' => $totalPageviews, 
+            'totalVisitorsOld' => $totalVisitorsOld, 
+            'totalPageviewsOld' => $totalPageviewsOld,
+            'bounceRate' => $bounceRate,
+            'bounceRateOld' => $bounceRateOld,
+            'avgSessionTime' => $avgSessionTime,
+            'avgSessionTimeOld' => $avgSessionTimeOld,
+            'avgSessionTimeFormatted' => $avgSessionTimeFormatted,
+            'avgSessionTimeOldFormatted' => $avgSessionTimeOldFormatted,
+            'totalReferrers' => $totalReferrers
+        ]);
     }
 
     /**
@@ -187,6 +219,366 @@ class StatController extends Controller
         }
 
         return view('stats.container', ['view' => 'realtime', 'website' => $website, 'range' => $range]);
+    }
+
+    /**
+     * Calculate the bounce rate.
+     *
+     * @param $website
+     * @param $range
+     * @return float
+     */
+    private function getBounceRate($website, $range)
+    {
+        // Get the total number of sessions for the date range
+        $totalSessions = Stat::where([['website_id', '=', $website->id], ['name', '=', 'visitors']])
+            ->whereBetween('date', [$range['from'], $range['to']])
+            ->sum('count');
+            
+        if ($totalSessions <= 0) {
+            return 0;
+        }
+            
+        // Get the number of single page sessions
+        // This is done by counting landing pages for the date range (each visitor has one landing page)
+        $singlePageSessions = Stat::where([['website_id', '=', $website->id], ['name', '=', 'landing_page']])
+            ->whereBetween('date', [$range['from'], $range['to']])
+            ->sum('count');
+            
+        // Calculate the bounce rate
+        $bounceRate = min(100, round(($singlePageSessions / $totalSessions) * 100, 2));
+        
+        return $bounceRate;
+    }
+    
+    /**
+     * Get the bounce rate data for chart display.
+     * 
+     * @param $website
+     * @param $range
+     * @return array
+     */
+    private function getBounceRateMap($website, $range)
+    {
+        // If the date range is for a single day
+        if ($range['unit'] == 'hour') {
+            // Initialize with zeros for all hours
+            $output = ['00' => 0, '01' => 0, '02' => 0, '03' => 0, '04' => 0, '05' => 0, '06' => 0, '07' => 0, '08' => 0, '09' => 0, '10' => 0, '11' => 0, '12' => 0, '13' => 0, '14' => 0, '15' => 0, '16' => 0, '17' => 0, '18' => 0, '19' => 0, '20' => 0, '21' => 0, '22' => 0, '23' => 0];
+            
+            // Calculate bounce rate for each hour
+            foreach ($output as $hour => $value) {
+                // Get visitors for this hour
+                $visitors = Stat::where([
+                        ['website_id', '=', $website->id], 
+                        ['name', '=', 'visitors_hours'],
+                        ['value', '=', $hour]
+                    ])
+                    ->whereBetween('date', [$range['from'], $range['to']])
+                    ->sum('count');
+                    
+                if ($visitors > 0) {
+                    // Get landing pages (single page sessions) for this hour
+                    $landingPages = Stat::where([
+                            ['website_id', '=', $website->id], 
+                            ['name', '=', 'landing_page']
+                        ])
+                        ->whereBetween('date', [$range['from'], $range['to']])
+                        ->sum('count');
+                        
+                    // Calculate bounce rate for this hour
+                    $output[$hour] = min(100, round(($landingPages / $visitors) * 100, 2));
+                }
+            }
+        } else {
+            // For periods greater than a day, get visitors and landing pages by date
+            $visitorsData = Stat::select([
+                    DB::raw("date_format(`date`, '". str_replace(['Y', 'm', 'd'], ['%Y', '%m', '%d'], $range['format'])."') as `date_result`, SUM(`count`) as `aggregate`")
+                ])
+                ->where([['website_id', '=', $website->id], ['name', '=', 'visitors']])
+                ->whereBetween('date', [$range['from'], $range['to']])
+                ->groupBy('date_result')
+                ->orderBy('date_result', 'asc')
+                ->get();
+                
+            $landingPagesData = Stat::select([
+                    DB::raw("date_format(`date`, '". str_replace(['Y', 'm', 'd'], ['%Y', '%m', '%d'], $range['format'])."') as `date_result`, SUM(`count`) as `aggregate`")
+                ])
+                ->where([['website_id', '=', $website->id], ['name', '=', 'landing_page']])
+                ->whereBetween('date', [$range['from'], $range['to']])
+                ->groupBy('date_result')
+                ->orderBy('date_result', 'asc')
+                ->get();
+            
+            // Map visitors data by date
+            $visitorsMap = $visitorsData->mapWithKeys(function ($result) use ($range) {
+                return [strval($range['unit'] == 'year' ? $result->date_result : Carbon::parse($result->date_result)->format($range['format'])) => $result->aggregate];
+            })->all();
+            
+            // Map landing pages data by date
+            $landingPagesMap = $landingPagesData->mapWithKeys(function ($result) use ($range) {
+                return [strval($range['unit'] == 'year' ? $result->date_result : Carbon::parse($result->date_result)->format($range['format'])) => $result->aggregate];
+            })->all();
+            
+            // Generate all dates in the range
+            $rangeMap = $this->calcAllDates(Carbon::createFromFormat('Y-m-d', $range['from'])->format($range['format']), Carbon::createFromFormat('Y-m-d', $range['to'])->format($range['format']), $range['unit'], $range['format'], 0);
+            
+            // Calculate bounce rate for each date in the range
+            $output = [];
+            foreach ($rangeMap as $date => $value) {
+                $visitors = $visitorsMap[$date] ?? 0;
+                $landingPages = $landingPagesMap[$date] ?? 0;
+                
+                if ($visitors > 0) {
+                    $output[$date] = min(100, round(($landingPages / $visitors) * 100, 2));
+                } else {
+                    $output[$date] = 0;
+                }
+            }
+        }
+        
+        return $output;
+    }
+
+    /**
+     * Calculate the average session time.
+     *
+     * @param $website
+     * @param $range
+     * @return float
+     */
+    private function getAverageSessionTime($website, $range)
+    {
+        // Get recent entries for the date range, ordered by visitor identifier and timestamp
+        $sessions = Recent::select('id', 'website_id', 'created_at')
+            ->where('website_id', '=', $website->id)
+            ->whereBetween('created_at', [$range['from'] . ' 00:00:00', $range['to'] . ' 23:59:59'])
+            ->orderBy('created_at')
+            ->get()
+            ->groupBy(function ($date) {
+                // Group by date
+                return Carbon::parse($date->created_at)->format('Y-m-d');
+            });
+
+        $totalSessionTime = 0;
+        $sessionCount = 0;
+        
+        // For each day in the range
+        foreach ($sessions as $day => $dayRecords) {
+            // Group records by hour to identify sessions
+            $hourlyRecords = $dayRecords->groupBy(function ($record) {
+                return Carbon::parse($record->created_at)->format('H');
+            });
+            
+            // Process each hour's records
+            foreach ($hourlyRecords as $hour => $records) {
+                // For simplicity, we'll consider page views within 30 minutes of each other to belong to the same session
+                $sessionStart = null;
+                $lastPageView = null;
+                $currentSessionTime = 0;
+                $inSession = false;
+                
+                // Sort records by timestamp
+                $sortedRecords = $records->sortBy('created_at');
+                
+                foreach ($sortedRecords as $record) {
+                    $currentTime = Carbon::parse($record->created_at);
+                    
+                    if (!$sessionStart) {
+                        // Start of a new session
+                        $sessionStart = $currentTime;
+                        $lastPageView = $currentTime;
+                        $inSession = true;
+                    } else {
+                        // Calculate time difference with the last page view
+                        $timeDiff = $currentTime->diffInSeconds($lastPageView);
+                        
+                        // If the time difference is less than 30 minutes, consider it part of the same session
+                        if ($timeDiff < 1800) { // 30 minutes = 1800 seconds
+                            $currentSessionTime += $timeDiff;
+                            $lastPageView = $currentTime;
+                        } else {
+                            // End the current session and start a new one
+                            if ($inSession) {
+                                $sessionCount++;
+                                $totalSessionTime += $currentSessionTime;
+                            }
+                            
+                            // Reset for a new session
+                            $sessionStart = $currentTime;
+                            $lastPageView = $currentTime;
+                            $currentSessionTime = 0;
+                        }
+                    }
+                }
+                
+                // Add the last session of this hour if it exists
+                if ($inSession) {
+                    $sessionCount++;
+                    $totalSessionTime += $currentSessionTime;
+                }
+            }
+        }
+        
+        // Calculate the average session time in seconds
+        $averageSessionTime = $sessionCount > 0 ? $totalSessionTime / $sessionCount : 0;
+        
+        return $averageSessionTime;
+    }
+    
+    /**
+     * Get the average session time data for chart display.
+     * 
+     * @param $website
+     * @param $range
+     * @return array
+     */
+    private function getAverageSessionTimeMap($website, $range)
+    {
+        // Initialize with zeros
+        if ($range['unit'] == 'hour') {
+            $output = ['00' => 0, '01' => 0, '02' => 0, '03' => 0, '04' => 0, '05' => 0, '06' => 0, '07' => 0, '08' => 0, '09' => 0, '10' => 0, '11' => 0, '12' => 0, '13' => 0, '14' => 0, '15' => 0, '16' => 0, '17' => 0, '18' => 0, '19' => 0, '20' => 0, '21' => 0, '22' => 0, '23' => 0];
+            
+            // For each hour, calculate average session time
+            foreach ($output as $hour => $value) {
+                // Get recents for this hour
+                $recents = Recent::where('website_id', '=', $website->id)
+                    ->whereBetween('created_at', [$range['from'] . ' ' . $hour . ':00:00', $range['from'] . ' ' . $hour . ':59:59'])
+                    ->orderBy('created_at')
+                    ->get();
+                
+                // If we have records
+                if ($recents->count() > 0) {
+                    // Calculate average session time for this hour
+                    $totalSessionTime = 0;
+                    $sessionCount = 0;
+                    $lastPageView = null;
+                    $inSession = false;
+                    $currentSessionTime = 0;
+                    
+                    foreach ($recents as $recent) {
+                        $currentTime = Carbon::parse($recent->created_at);
+                        
+                        if (!$lastPageView) {
+                            $lastPageView = $currentTime;
+                            $inSession = true;
+                        } else {
+                            $timeDiff = $currentTime->diffInSeconds($lastPageView);
+                            
+                            if ($timeDiff < 1800) { // 30 minutes
+                                $currentSessionTime += $timeDiff;
+                                $lastPageView = $currentTime;
+                            } else {
+                                if ($inSession) {
+                                    $sessionCount++;
+                                    $totalSessionTime += $currentSessionTime;
+                                }
+                                
+                                $lastPageView = $currentTime;
+                                $currentSessionTime = 0;
+                            }
+                        }
+                    }
+                    
+                    // Add the last session if it exists
+                    if ($inSession) {
+                        $sessionCount++;
+                        $totalSessionTime += $currentSessionTime;
+                    }
+                    
+                    // Calculate average for this hour
+                    $output[$hour] = $sessionCount > 0 ? $totalSessionTime / $sessionCount : 0;
+                }
+            }
+        } else {
+            // For periods greater than a day, calculate session time by date
+            $dateRange = [];
+            $current = Carbon::createFromFormat('Y-m-d', $range['from']);
+            $end = Carbon::createFromFormat('Y-m-d', $range['to']);
+            
+            while ($current->lte($end)) {
+                $dateRange[] = $current->format('Y-m-d');
+                $current->addDay();
+            }
+            
+            $output = [];
+            foreach ($dateRange as $date) {
+                // Get recents for this date
+                $recents = Recent::where('website_id', '=', $website->id)
+                    ->whereBetween('created_at', [$date . ' 00:00:00', $date . ' 23:59:59'])
+                    ->orderBy('created_at')
+                    ->get();
+                
+                // Calculate average session time for this date
+                $totalSessionTime = 0;
+                $sessionCount = 0;
+                $lastPageView = null;
+                $inSession = false;
+                $currentSessionTime = 0;
+                
+                foreach ($recents as $recent) {
+                    $currentTime = Carbon::parse($recent->created_at);
+                    
+                    if (!$lastPageView) {
+                        $lastPageView = $currentTime;
+                        $inSession = true;
+                    } else {
+                        $timeDiff = $currentTime->diffInSeconds($lastPageView);
+                        
+                        if ($timeDiff < 1800) { // 30 minutes
+                            $currentSessionTime += $timeDiff;
+                            $lastPageView = $currentTime;
+                        } else {
+                            if ($inSession) {
+                                $sessionCount++;
+                                $totalSessionTime += $currentSessionTime;
+                            }
+                            
+                            $lastPageView = $currentTime;
+                            $currentSessionTime = 0;
+                        }
+                    }
+                }
+                
+                // Add the last session if it exists
+                if ($inSession) {
+                    $sessionCount++;
+                    $totalSessionTime += $currentSessionTime;
+                }
+                
+                // Convert date to the required format
+                $formattedDate = $range['unit'] == 'year' ? 
+                    Carbon::parse($date)->format('Y') : 
+                    Carbon::parse($date)->format($range['format']);
+                
+                // Calculate average for this date
+                $output[$formattedDate] = $sessionCount > 0 ? $totalSessionTime / $sessionCount : 0;
+            }
+        }
+        
+        return $output;
+    }
+    
+    /**
+     * Format seconds into a human-readable time string (mm:ss or hh:mm:ss).
+     *
+     * @param $seconds
+     * @return string
+     */
+    private function formatTime($seconds)
+    {
+        if ($seconds <= 0) {
+            return '0:00';
+        }
+        
+        $hours = floor($seconds / 3600);
+        $minutes = floor(($seconds % 3600) / 60);
+        $secs = $seconds % 60;
+        
+        if ($hours > 0) {
+            return sprintf('%d:%02d:%02d', $hours, $minutes, $secs);
+        } else {
+            return sprintf('%d:%02d', $minutes, $secs);
+        }
     }
 
     /**

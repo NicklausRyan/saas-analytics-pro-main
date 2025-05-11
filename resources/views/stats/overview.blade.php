@@ -16,7 +16,7 @@
             <div class="col-12 col-md">
                 <div class="row">
                     <!-- Visitors -->
-                    <div class="col-12 col-md-6 border-bottom border-bottom-md-0 {{ (__('lang_dir') == 'rtl' ? 'border-left-md' : 'border-right-md')  }}">
+                    <div class="col-12 col-md-3 border-bottom border-bottom-md-0 {{ (__('lang_dir') == 'rtl' ? 'border-left-md' : 'border-right-md')  }}">
                         <div class="px-2 py-4">
                             <div class="d-flex">
                                 <div class="text-truncate {{ (__('lang_dir') == 'rtl' ? 'ml-2' : 'mr-2') }}">
@@ -42,7 +42,7 @@
                     </div>
 
                     <!-- Pageviews -->
-                    <div class="col-12 col-md-6">
+                    <div class="col-12 col-md-3 border-bottom border-bottom-md-0 {{ (__('lang_dir') == 'rtl' ? 'border-left-md' : 'border-right-md')  }}">
                         <div class="px-2 py-4">
                             <div class="d-flex">
                                 <div class="text-truncate {{ (__('lang_dir') == 'rtl' ? 'ml-2' : 'mr-2') }}">
@@ -66,6 +66,58 @@
                             </div>
                         </div>
                     </div>
+                    
+                    <!-- Bounce Rate -->
+                    <div class="col-12 col-md-3 border-bottom border-bottom-md-0 {{ (__('lang_dir') == 'rtl' ? 'border-left-md' : 'border-right-md')  }}">
+                        <div class="px-2 py-4">
+                            <div class="d-flex">
+                                <div class="text-truncate {{ (__('lang_dir') == 'rtl' ? 'ml-2' : 'mr-2') }}">
+                                    <div class="d-flex align-items-center text-truncate">
+                                        <div class="d-flex align-items-center justify-content-center bg-success rounded width-4 height-4 flex-shrink-0 {{ (__('lang_dir') == 'rtl' ? 'ml-2' : 'mr-2') }}" id="bounce-rate-legend"></div>
+
+                                        <div class="flex-grow-1 d-flex font-weight-bold text-truncate">
+                                            <div class="text-truncate">{{ __('Bounce Rate') }}</div>
+                                            <div class="flex-shrink-0 d-flex align-items-center mx-2" data-tooltip="true" title="{{ __('Bounce rate represents the percentage of visitors who navigate away from the site after viewing only one page.') }}">
+                                                @include('icons.info', ['class' => 'width-4 height-4 fill-current text-muted'])
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    @include('stats.growth', ['growthCurrent' => $bounceRate, 'growthPrevious' => $bounceRateOld])
+                                </div>
+
+                                <div class="d-flex align-items-center {{ (__('lang_dir') == 'rtl' ? 'mr-auto' : 'ml-auto') }}">
+                                    <div class="h2 font-weight-bold mb-0">{{ $bounceRate }}%</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Average Session Time -->
+                    <div class="col-12 col-md-3">
+                        <div class="px-2 py-4">
+                            <div class="d-flex">
+                                <div class="text-truncate {{ (__('lang_dir') == 'rtl' ? 'ml-2' : 'mr-2') }}">
+                                    <div class="d-flex align-items-center text-truncate">
+                                        <div class="d-flex align-items-center justify-content-center bg-info rounded width-4 height-4 flex-shrink-0 {{ (__('lang_dir') == 'rtl' ? 'ml-2' : 'mr-2') }}" id="avg-session-time-legend"></div>
+
+                                        <div class="flex-grow-1 d-flex font-weight-bold text-truncate">
+                                            <div class="text-truncate">{{ __('Avg. Session Time') }}</div>
+                                            <div class="flex-shrink-0 d-flex align-items-center mx-2" data-tooltip="true" title="{{ __('Average Session Time represents the amount of time visitors spend on your site during a session.') }}">
+                                                @include('icons.info', ['class' => 'width-4 height-4 fill-current text-muted'])
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    @include('stats.growth', ['growthCurrent' => $avgSessionTime, 'growthPrevious' => $avgSessionTimeOld])
+                                </div>
+
+                                <div class="d-flex align-items-center {{ (__('lang_dir') == 'rtl' ? 'mr-auto' : 'ml-auto') }}">
+                                    <div class="h2 font-weight-bold mb-0">{{ $avgSessionTimeFormatted }}</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -83,9 +135,12 @@
                     size: 12
                 };
 
-                const phBgColor = window.getComputedStyle(document.getElementById('trend-chart-container')).getPropertyValue('background-color');
-                const uniqueColor = window.getComputedStyle(document.getElementById('visitors-legend')).getPropertyValue('background-color');
-                const pageViewsColor = window.getComputedStyle(document.getElementById('pageviews-legend')).getPropertyValue('background-color');
+                const phBgColor = window.getComputedStyle(document.getElementById('trend-chart-container')).getPropertyValue('background-color');                const uniqueColor = window.getComputedStyle(document.getElementById('visitors-legend')).getPropertyValue('background-color');                const pageViewsColor = window.getComputedStyle(document.getElementById('pageviews-legend')).getPropertyValue('background-color');
+                
+                // Set the color for bounce rate and avg session time legends
+                document.getElementById('bounce-rate-legend').style.backgroundColor = '#4CAF50';
+                document.getElementById('avg-session-time-legend').style.backgroundColor = '#17a2b8';
+                const avgSessionTimeColor = '#17a2b8'; // Info color
 
                 const ctx = document.querySelector('#trend-chart').getContext('2d');
                 const gradient1 = ctx.createLinearGradient(0, 0, 0, 300);
@@ -95,6 +150,14 @@
                 const gradient2 = ctx.createLinearGradient(0, 0, 0, 300);
                 gradient2.addColorStop(0, pageViewsColor.replace('rgb', 'rgba').replace(')', ', 0.35)'));
                 gradient2.addColorStop(1, pageViewsColor.replace('rgb', 'rgba').replace(')', ', 0.01)'));
+                
+                const gradient3 = ctx.createLinearGradient(0, 0, 0, 225);
+                gradient3.addColorStop(0, 'rgba(76, 175, 80, 0.1)');
+                gradient3.addColorStop(1, 'rgba(76, 175, 80, 0)');
+                
+                const gradient4 = ctx.createLinearGradient(0, 0, 0, 225);
+                gradient4.addColorStop(0, 'rgba(23, 162, 184, 0.1)');
+                gradient4.addColorStop(1, 'rgba(23, 162, 184, 0)');
 
                 let tooltipTitles = [
                     @foreach($visitorsMap as $date => $value)
@@ -116,7 +179,11 @@
                     hitRadius: 5,
                     pointHoverBorderWidth: 3,
                     lineTension: 0,
-                }
+                }                // Create a color for bounce rate
+                const bounceRateColor = '#4CAF50'; // Success green color
+                const gradient3 = ctx.createLinearGradient(0, 0, 0, 225);
+                gradient3.addColorStop(0, 'rgba(76, 175, 80, 0.1)');
+                gradient3.addColorStop(1, 'rgba(76, 175, 80, 0)');
 
                 let trendChart = new Chart(ctx, {
                     type: 'line',
@@ -164,7 +231,38 @@
                             pointBackgroundColor: pageViewsColor,
                             pointHoverBackgroundColor: phBgColor,
                             pointHoverBorderColor: pageViewsColor,
-                            ...lineOptions
+                            ...lineOptions                        }, {
+                            label: '{{ __('Bounce Rate') }}',
+                            data: [
+                                @foreach($bounceRateMap as $date => $value)
+                                    {{ $value }},
+                                @endforeach
+                            ],
+                            fill: true,
+                            backgroundColor: gradient3,
+                            borderColor: bounceRateColor,
+                            pointBorderColor: bounceRateColor,
+                            pointBackgroundColor: bounceRateColor,
+                            pointHoverBackgroundColor: phBgColor,
+                            pointHoverBorderColor: bounceRateColor,
+                            ...lineOptions,
+                            yAxisID: 'y1' // Use a separate y-axis for bounce rate
+                        }, {
+                            label: '{{ __('Avg. Session Time') }}',
+                            data: [
+                                @foreach($avgSessionTimeMap as $date => $value)
+                                    {{ $value }},
+                                @endforeach
+                            ],
+                            fill: true,
+                            backgroundColor: gradient4,
+                            borderColor: avgSessionTimeColor,
+                            pointBorderColor: avgSessionTimeColor,
+                            pointBackgroundColor: avgSessionTimeColor,
+                            pointHoverBackgroundColor: phBgColor,
+                            pointHoverBorderColor: avgSessionTimeColor,
+                            ...lineOptions,
+                            yAxisID: 'y2' // Use a separate y-axis for avg session time
                         }]
                     },
                     options: {
@@ -216,19 +314,30 @@
                                 cornerRadius: 4,
                                 caretSize: 7,
 
-                                boxPadding: 4,
-
-                                callbacks: {
+                                boxPadding: 4,                                callbacks: {
                                     label: function (tooltipItem) {
-                                        return ' ' + tooltipItem.dataset.label + ': ' + parseFloat(tooltipItem.dataset.data[tooltipItem.dataIndex]).format(0, 3, '{{ __(',') }}').toString();
+                                        let value = parseFloat(tooltipItem.dataset.data[tooltipItem.dataIndex]);
+                                        
+                                        // Add percentage sign for bounce rate
+                                        if (tooltipItem.dataset.label === '{{ __('Bounce Rate') }}') {
+                                            return ' ' + tooltipItem.dataset.label + ': ' + value.format(0, 3, '{{ __(',') }}') + '%';
+                                        }
+                                        
+                                        // Format average session time as mm:ss
+                                        if (tooltipItem.dataset.label === '{{ __('Avg. Session Time') }}') {
+                                            const minutes = Math.floor(value / 60);
+                                            const seconds = Math.floor(value % 60);
+                                            return ' ' + tooltipItem.dataset.label + ': ' + minutes + ':' + (seconds < 10 ? '0' : '') + seconds;
+                                        }
+                                        
+                                        return ' ' + tooltipItem.dataset.label + ': ' + value.format(0, 3, '{{ __(',') }}');
                                     },
                                     title: function (tooltipItem) {
                                         return tooltipTitles[tooltipItem[0].dataIndex];
                                     }
                                 }
                             },
-                        },
-                        scales: {
+                        },                        scales: {
                             x: {
                                 display: true,
                                 grid: {
@@ -240,9 +349,39 @@
                                     padding: 10,
                                 }
                             },
-                            y: {
+                            y: { // Primary y-axis for visitors and pageviews
                                 display: true,
                                 beginAtZero: true,
+                                position: 'left',
+                            },                            y1: { // Secondary y-axis for bounce rate
+                                display: true,
+                                position: 'right',
+                                beginAtZero: true,
+                                max: 100, // Bounce rate is a percentage from 0-100
+                                grid: {
+                                    drawOnChartArea: false, // Only show grid lines for the main axis
+                                },
+                                ticks: {
+                                    callback: function(value) {
+                                        return value + '%';
+                                    }
+                                },
+                            },
+                            y2: { // Third y-axis for average session time
+                                display: true,
+                                position: 'right',
+                                beginAtZero: true,
+                                grid: {
+                                    drawOnChartArea: false, // Only show grid lines for the main axis
+                                },
+                                ticks: {
+                                    callback: function(value) {
+                                        // Format seconds to minutes:seconds
+                                        const minutes = Math.floor(value / 60);
+                                        const seconds = Math.floor(value % 60);
+                                        return minutes + ':' + (seconds < 10 ? '0' : '') + seconds;
+                                    }
+                                },
                                 grid: {
                                     tickLength: 0
                                 },
@@ -265,10 +404,11 @@
                 const observer = (new MutationObserver(function (mutationsList, observer) {
                     for (const mutation of mutationsList) {
                         if (mutation.type === 'attributes' && mutation.attributeName === 'class') {
-                            setTimeout(function () {
-                                const phBgColor = window.getComputedStyle(document.getElementById('trend-chart-container')).getPropertyValue('background-color');
+                            setTimeout(function () {                                const phBgColor = window.getComputedStyle(document.getElementById('trend-chart-container')).getPropertyValue('background-color');
                                 const visitorsColor = window.getComputedStyle(document.getElementById('visitors-legend')).getPropertyValue('background-color');
                                 const pageViewsColor = window.getComputedStyle(document.getElementById('pageviews-legend')).getPropertyValue('background-color');
+                                const bounceRateColor = document.getElementById('bounce-rate-legend').style.backgroundColor || '#4CAF50';
+                                const avgSessionTimeColor = document.getElementById('avg-session-time-legend').style.backgroundColor || '#17a2b8';
 
                                 const gradient1 = ctx.createLinearGradient(0, 0, 0, 300);
                                 gradient1.addColorStop(0, visitorsColor.replace('rgb', 'rgba').replace(')', ', 0.35)'));
@@ -277,6 +417,14 @@
                                 const gradient2 = ctx.createLinearGradient(0, 0, 0, 300);
                                 gradient2.addColorStop(0, pageViewsColor.replace('rgb', 'rgba').replace(')', ', 0.35)'));
                                 gradient2.addColorStop(1, pageViewsColor.replace('rgb', 'rgba').replace(')', ', 0.01)'));
+                                
+                                const gradient3 = ctx.createLinearGradient(0, 0, 0, 300);
+                                gradient3.addColorStop(0, 'rgba(76, 175, 80, 0.1)');
+                                gradient3.addColorStop(1, 'rgba(76, 175, 80, 0)');
+                                
+                                const gradient4 = ctx.createLinearGradient(0, 0, 0, 300);
+                                gradient4.addColorStop(0, 'rgba(23, 162, 184, 0.1)');
+                                gradient4.addColorStop(1, 'rgba(23, 162, 184, 0)');
 
                                 trendChart.data.datasets[0].backgroundColor = gradient1;
                                 trendChart.data.datasets[0].borderColor = visitorsColor;
@@ -291,6 +439,20 @@
                                 trendChart.data.datasets[1].pointBackgroundColor = pageViewsColor;
                                 trendChart.data.datasets[1].pointHoverBackgroundColor = phBgColor;
                                 trendChart.data.datasets[1].pointHoverBorderColor = pageViewsColor;
+                                
+                                trendChart.data.datasets[2].backgroundColor = gradient3;
+                                trendChart.data.datasets[2].borderColor = bounceRateColor;
+                                trendChart.data.datasets[2].pointBorderColor = bounceRateColor;
+                                trendChart.data.datasets[2].pointBackgroundColor = bounceRateColor;
+                                trendChart.data.datasets[2].pointHoverBackgroundColor = phBgColor;
+                                trendChart.data.datasets[2].pointHoverBorderColor = bounceRateColor;
+                                
+                                trendChart.data.datasets[3].backgroundColor = gradient4;
+                                trendChart.data.datasets[3].borderColor = avgSessionTimeColor;
+                                trendChart.data.datasets[3].pointBorderColor = avgSessionTimeColor;
+                                trendChart.data.datasets[3].pointBackgroundColor = avgSessionTimeColor;
+                                trendChart.data.datasets[3].pointHoverBackgroundColor = phBgColor;
+                                trendChart.data.datasets[3].pointHoverBorderColor = avgSessionTimeColor;
 
                                 trendChart.options.plugins.tooltip.backgroundColor = (document.querySelector('html').classList.contains('dark') == 0 ? '#000' : '#FFF');
                                 trendChart.options.plugins.tooltip.titleColor = (document.querySelector('html').classList.contains('dark') == 0 ? '#FFF' : '#000');
