@@ -11,12 +11,56 @@
                         @include('icons.assesment', ['class' => 'fill-current width-5 height-5'])
                     </div>
                 </div>
-            </div>
-
-            <div class="col-12 col-md">
+            </div>            <div class="col-12 col-md">
                 <div class="row">
+                    <!-- Bounce Rate -->
+                    <div class="col-12 col-md-4 border-bottom border-bottom-md-0 {{ (__('lang_dir') == 'rtl' ? 'border-left-md' : 'border-right-md')  }}">
+                        <div class="px-2 py-4">
+                            <div class="d-flex">
+                                <div class="text-truncate {{ (__('lang_dir') == 'rtl' ? 'ml-2' : 'mr-2') }}">
+                                    <div class="d-flex align-items-center text-truncate">
+                                        <div class="d-flex align-items-center justify-content-center bg-info rounded width-4 height-4 flex-shrink-0 {{ (__('lang_dir') == 'rtl' ? 'ml-2' : 'mr-2') }}" id="bounce-rate-legend"></div>
+
+                                        <div class="flex-grow-1 d-flex font-weight-bold text-truncate">
+                                            <div class="text-truncate">{{ __('Bounce Rate') }}</div>
+                                            <div class="flex-shrink-0 d-flex align-items-center mx-2" data-tooltip="true" title="{{ __('The percentage of visitors who navigate away from your site after viewing only one page.') }}">
+                                                @include('icons.info', ['class' => 'width-4 height-4 fill-current text-muted'])
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="d-flex align-items-center {{ (__('lang_dir') == 'rtl' ? 'mr-auto' : 'ml-auto') }}">
+                                    <div class="h2 font-weight-bold mb-0">{{ number_format($bounceRate * 100, 1, __('.'), __(',')) }}%</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>                    <!-- Average Session Duration -->
+                    <div class="col-12 col-md-4 border-bottom border-bottom-md-0 {{ (__('lang_dir') == 'rtl' ? 'border-left-md' : 'border-right-md')  }}">
+                        <div class="px-2 py-4">
+                            <div class="d-flex">
+                                <div class="text-truncate {{ (__('lang_dir') == 'rtl' ? 'ml-2' : 'mr-2') }}">
+                                    <div class="d-flex align-items-center text-truncate">
+                                        <div class="d-flex align-items-center justify-content-center bg-success rounded width-4 height-4 flex-shrink-0 {{ (__('lang_dir') == 'rtl' ? 'ml-2' : 'mr-2') }}" id="session-duration-legend"></div>
+
+                                        <div class="flex-grow-1 d-flex font-weight-bold text-truncate">
+                                            <div class="text-truncate">{{ __('Session Time') }}</div>
+                                            <div class="flex-shrink-0 d-flex align-items-center mx-2" data-tooltip="true" title="{{ __('The average amount of time that visitors spend on your site.') }}">
+                                                @include('icons.info', ['class' => 'width-4 height-4 fill-current text-muted'])
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="d-flex align-items-center {{ (__('lang_dir') == 'rtl' ? 'mr-auto' : 'ml-auto') }}">
+                                    <div class="h2 font-weight-bold mb-0">{{ floor($avgSessionDuration / 60) }}m {{ $avgSessionDuration % 60 }}s</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
                     <!-- Visitors -->
-                    <div class="col-12 col-md-6 border-bottom border-bottom-md-0 {{ (__('lang_dir') == 'rtl' ? 'border-left-md' : 'border-right-md')  }}">
+                    <div class="col-12 col-md-4">
                         <div class="px-2 py-4">
                             <div class="d-flex">
                                 <div class="text-truncate {{ (__('lang_dir') == 'rtl' ? 'ml-2' : 'mr-2') }}">
@@ -40,9 +84,11 @@
                             </div>
                         </div>
                     </div>
+                </div>
 
+                <div class="row border-top">
                     <!-- Pageviews -->
-                    <div class="col-12 col-md-6">
+                    <div class="col-12 col-md-6 border-bottom border-bottom-md-0 {{ (__('lang_dir') == 'rtl' ? 'border-left-md' : 'border-right-md')  }}">
                         <div class="px-2 py-4">
                             <div class="d-flex">
                                 <div class="text-truncate {{ (__('lang_dir') == 'rtl' ? 'ml-2' : 'mr-2') }}">
@@ -66,6 +112,13 @@
                             </div>
                         </div>
                     </div>
+
+                    <!-- Space for future metrics -->
+                    <div class="col-12 col-md-6">
+                        <div class="px-2 py-4">
+                            
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -81,11 +134,11 @@
                 Chart.defaults.font = {
                     family: "Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, 'Noto Sans', sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji'",
                     size: 12
-                };
-
-                const phBgColor = window.getComputedStyle(document.getElementById('trend-chart-container')).getPropertyValue('background-color');
+                };                const phBgColor = window.getComputedStyle(document.getElementById('trend-chart-container')).getPropertyValue('background-color');
                 const uniqueColor = window.getComputedStyle(document.getElementById('visitors-legend')).getPropertyValue('background-color');
                 const pageViewsColor = window.getComputedStyle(document.getElementById('pageviews-legend')).getPropertyValue('background-color');
+                const bounceRateColor = window.getComputedStyle(document.getElementById('bounce-rate-legend')).getPropertyValue('background-color');
+                const sessionDurationColor = window.getComputedStyle(document.getElementById('session-duration-legend')).getPropertyValue('background-color');
 
                 const ctx = document.querySelector('#trend-chart').getContext('2d');
                 const gradient1 = ctx.createLinearGradient(0, 0, 0, 300);
@@ -265,10 +318,11 @@
                 const observer = (new MutationObserver(function (mutationsList, observer) {
                     for (const mutation of mutationsList) {
                         if (mutation.type === 'attributes' && mutation.attributeName === 'class') {
-                            setTimeout(function () {
-                                const phBgColor = window.getComputedStyle(document.getElementById('trend-chart-container')).getPropertyValue('background-color');
+                            setTimeout(function () {                                const phBgColor = window.getComputedStyle(document.getElementById('trend-chart-container')).getPropertyValue('background-color');
                                 const visitorsColor = window.getComputedStyle(document.getElementById('visitors-legend')).getPropertyValue('background-color');
                                 const pageViewsColor = window.getComputedStyle(document.getElementById('pageviews-legend')).getPropertyValue('background-color');
+                                const bounceRateColor = window.getComputedStyle(document.getElementById('bounce-rate-legend')).getPropertyValue('background-color');
+                                const sessionDurationColor = window.getComputedStyle(document.getElementById('session-duration-legend')).getPropertyValue('background-color');
 
                                 const gradient1 = ctx.createLinearGradient(0, 0, 0, 300);
                                 gradient1.addColorStop(0, visitorsColor.replace('rgb', 'rgba').replace(')', ', 0.35)'));

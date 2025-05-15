@@ -77,13 +77,31 @@ class StatController extends Controller
 
         $operatingSystems = $this->getOperatingSystems($website, $range, null, null, 'count', 'desc')
             ->limit(5)
-            ->get();
-
-        $events = $this->getEvents($website, $range, null, null, 'count', 'desc')
+            ->get();        $events = $this->getEvents($website, $range, null, null, 'count', 'desc')
             ->limit(5)
             ->get();
+            
+        // Calculate bounce rate
+        $bounceCount = Stat::where([['website_id', '=', $website->id], ['name', '=', 'bounce']])
+            ->whereBetween('date', [$range['from'], $range['to']])
+            ->sum('count');
+            
+        // Safe calculation to avoid division by zero
+        $bounceRate = $totalVisitors > 0 ? $bounceCount / $totalVisitors : 0;
+        
+        // Get average session duration
+        $sessionDurationSum = Stat::where([['website_id', '=', $website->id], ['name', '=', 'session_duration']])
+            ->whereBetween('date', [$range['from'], $range['to']])
+            ->sum('value');
+            
+        $sessionCount = Stat::where([['website_id', '=', $website->id], ['name', '=', 'session']])
+            ->whereBetween('date', [$range['from'], $range['to']])
+            ->sum('count');
+            
+        // Safe calculation to avoid division by zero
+        $avgSessionDuration = $sessionCount > 0 ? (int)($sessionDurationSum / $sessionCount) : 0;
 
-        return view('stats.container', ['view' => 'overview', 'website' => $website, 'range' => $range, 'referrers' => $referrers, 'pages' => $pages, 'visitorsMap' => $visitorsMap, 'pageviewsMap' => $pageviewsMap, 'countries' => $countries, 'browsers' => $browsers, 'operatingSystems' => $operatingSystems, 'events' => $events, 'totalVisitors' => $totalVisitors, 'totalPageviews' => $totalPageviews, 'totalVisitorsOld' => $totalVisitorsOld, 'totalPageviewsOld' => $totalPageviewsOld, 'totalReferrers' => $totalReferrers]);
+        return view('stats.container', ['view' => 'overview', 'website' => $website, 'range' => $range, 'referrers' => $referrers, 'pages' => $pages, 'visitorsMap' => $visitorsMap, 'pageviewsMap' => $pageviewsMap, 'countries' => $countries, 'browsers' => $browsers, 'operatingSystems' => $operatingSystems, 'events' => $events, 'totalVisitors' => $totalVisitors, 'totalPageviews' => $totalPageviews, 'totalVisitorsOld' => $totalVisitorsOld, 'totalPageviewsOld' => $totalPageviewsOld, 'totalReferrers' => $totalReferrers, 'bounceRate' => $bounceRate, 'avgSessionDuration' => $avgSessionDuration]);
     }
 
     /**
@@ -267,6 +285,46 @@ class StatController extends Controller
             ->first();
 
         return view('stats.container', ['view' => 'landing-pages', 'website' => $website, 'range' => $range, 'export' => 'stats.export.landing_pages', 'landingPages' => $landingPages, 'first' => $first, 'last' => $last, 'total' => $total]);
+    }
+
+    /**
+     * Show the Exit Pages stats page.
+     *
+     * @param Request $request
+     * @param $id
+     * @return \Illuminate\Contracts\Foundation\Application|\Illuminate\Contracts\View\Factory|\Illuminate\View\View
+     */
+    public function exitPages(Request $request, $id)
+    {
+        $website = Website::where('domain', $id)->firstOrFail();
+
+        if ($this->statsGuard($website)) {
+            return view('stats.password', ['website' => $website]);
+        };
+
+        $range = $this->range();
+        $search = $request->input('search');
+        $searchBy = in_array($request->input('search_by'), ['value']) ? $request->input('search_by') : 'value';
+        $sortBy = in_array($request->input('sort_by'), ['count', 'value']) ? $request->input('sort_by') : 'count';
+        $sort = in_array($request->input('sort'), ['asc', 'desc']) ? $request->input('sort') : 'desc';
+        $perPage = in_array($request->input('per_page'), [10, 25, 50, 100]) ? $request->input('per_page') : config('settings.paginate');
+
+        $total = Stat::selectRaw('SUM(`count`) as `count`')
+            ->where([['website_id', '=', $website->id], ['name', '=', 'exit_page']])
+            ->whereBetween('date', [$range['from'], $range['to']])
+            ->first();
+
+        $exitPages = $this->getExitPages($website, $range, $search, $searchBy, $sortBy, $sort)
+            ->paginate($perPage)
+            ->appends(['from' => $range['from'], 'to' => $range['to'], 'search' => $search, 'search_by' => $searchBy, 'sort_by' => $sortBy, 'sort' => $sort]);
+
+        $first = $this->getExitPages($website, $range, $search, $searchBy, 'count', 'desc')
+            ->first();
+
+        $last = $this->getExitPages($website, $range, $search, $searchBy, 'count', 'asc')
+            ->first();
+
+        return view('stats.container', ['view' => 'exit-pages', 'website' => $website, 'range' => $range, 'export' => 'stats.export.exit_pages', 'exitPages' => $exitPages, 'first' => $first, 'last' => $last, 'total' => $total]);
     }
 
     /**
@@ -848,6 +906,32 @@ class StatController extends Controller
     }
 
     /**
+     * Export the Exit Pages stats.
+     *
+     * @param Request $request
+     * @param $id
+     * @return \Illuminate\Contracts\Foundation\Application|\Illuminate\Contracts\View\Factory|\Illuminate\View\View|CSV\Writer
+     * @throws CSV\CannotInsertRecord
+     */
+    public function exportExitPages(Request $request, $id)
+    {
+        $website = Website::where('domain', $id)->firstOrFail();
+
+        if ($this->statsGuard($website)) {
+            return view('stats.password', ['website' => $website]);
+        };
+
+        $range = $this->range();
+        $search = $request->input('search');
+        $searchBy = in_array($request->input('search_by'), ['value']) ? $request->input('search_by') : 'value';
+        $sortBy = in_array($request->input('sort_by'), ['count', 'value']) ? $request->input('sort_by') : 'count';
+        $sort = in_array($request->input('sort'), ['asc', 'desc']) ? $request->input('sort') : 'desc';
+
+
+        return $this->exportCSV($request, $website, __('Exit pages'), $range, __('URL'), __('Visitors'), $this->getExitPages($website, $range, $search, $searchBy, $sortBy, $sort)->get());
+    }
+
+    /**
      * Export the Referrers stats.
      *
      * @param Request $request
@@ -1221,6 +1305,27 @@ class StatController extends Controller
     {
         return Stat::selectRaw('`value`, SUM(`count`) as `count`')
             ->where([['website_id', '=', $website->id], ['name', '=', 'landing_page']])
+            ->when($search, function ($query) use ($search, $searchBy) {
+                return $query->searchValue($search);
+            })
+            ->whereBetween('date', [$range['from'], $range['to']])
+            ->groupBy('value')
+            ->orderBy($sortBy, $sort);
+    }
+
+    /**
+     * Get the Exit Pages.
+     *
+     * @param $website
+     * @param $range
+     * @param null $search
+     * @param null $sort
+     * @return mixed
+     */
+    private function getExitPages($website, $range, $search = null, $searchBy = null, $sortBy = null, $sort = null)
+    {
+        return Stat::selectRaw('`value`, SUM(`count`) as `count`')
+            ->where([['website_id', '=', $website->id], ['name', '=', 'exit_page']])
             ->when($search, function ($query) use ($search, $searchBy) {
                 return $query->searchValue($search);
             })

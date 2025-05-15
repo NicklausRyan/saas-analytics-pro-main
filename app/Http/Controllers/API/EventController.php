@@ -11,8 +11,7 @@ use Symfony\Component\HttpFoundation\IpUtils;
 use WhichBrowser\Parser as UserAgent;
 
 class EventController extends Controller
-{
-    /**
+{    /**
      * The tracking mechanism.
      *
      * @param Request $request
@@ -21,7 +20,10 @@ class EventController extends Controller
     public function index(Request $request)
     {
         $page = $this->parseUrl($request->input('page'));
-
+        
+        // Get visitor's IP and user agent for session tracking
+        $visitorIdentifier = md5($request->ip() . ($request->header('User-Agent') ?? ''));
+        
         $website = DB::table('websites')
             ->select(['websites.id', 'websites.domain', 'websites.user_id', 'websites.exclude_bots', 'websites.exclude_ips', 'websites.exclude_params', 'users.can_track'])
             ->join('users', 'users.id', '=', 'websites.user_id')
@@ -181,11 +183,70 @@ class EventController extends Controller
         $values = implode(', ', $values);
 
         // Stats
-        DB::statement("INSERT INTO `stats` (`website_id`, `name`, `value`, `date`) VALUES {$values} ON DUPLICATE KEY UPDATE `count` = `count` + 1;");
-
-        if (empty($request->input('event'))) {
+        DB::statement("INSERT INTO `stats` (`website_id`, `name`, `value`, `date`) VALUES {$values} ON DUPLICATE KEY UPDATE `count` = `count` + 1;");        if (empty($request->input('event'))) {
             // Recent traffic
-            DB::statement("INSERT INTO `recents` (`id`, `website_id`, `page`, `referrer`, `os`, `browser`, `device`, `country`, `city`, `language`, `created_at`) VALUES (NULL, :website_id, :page, :referrer, :os, :browser, :device, :country, :city, :language, :timestamp)", ['website_id' => $website->id, 'page' => $data['page'], 'referrer' => $referrer['host'] ?? null, 'os' => $os, 'browser' => $browser, 'device' => $device, 'country' => $country, 'city' => $city, 'language' => $language, 'timestamp' => $now]);
+            DB::statement("INSERT INTO `recents` (`id`, `website_id`, `page`, `referrer`, `os`, `browser`, `device`, `country`, `city`, `language`, `created_at`) VALUES (NULL, :website_id, :page, :referrer, :os, :browser, :device, :country, :city, :language, :timestamp)", ['website_id' => $website->id, 'page' => $data['page'], 'referrer' => $referrer['host'] ?? null, 'os' => $os, 'browser' => $browser, 'device' => $device, 'country' => $country, 'city' => $city, 'language' => $language, 'timestamp' => $now]);            // Track session and bounce data
+            // Look up previous hits in this session (last 30 minutes)
+            $sessionTimeout = $now->copy()->subMinutes(30);
+            $previousHits = DB::table('recents')
+                ->where('website_id', '=', $website->id)
+                ->where(DB::raw("MD5(CONCAT(ip_address, user_agent))"), '=', $visitorIdentifier)
+                ->where('created_at', '>=', $sessionTimeout)
+                ->count();
+                  // If this is the first hit in a session
+            if ($previousHits == 0) {
+                // Track new session
+                $data['session'] = $date;
+                
+                // This is potentially a bounce (will be counted if no further pageviews occur)
+                $data['bounce'] = $date;
+                
+                // Store the session start time
+                $data['session_start'] = $date;
+                
+                // Add the session, bounce and session_start to the values for insertion
+                $values[] = "({$website->id}, 'session', " . DB::connection()->getPdo()->quote(mb_substr($date, 0, 255)) . ", '{$date}')";
+                $values[] = "({$website->id}, 'bounce', " . DB::connection()->getPdo()->quote(mb_substr($date, 0, 255)) . ", '{$date}')";
+                $values[] = "({$website->id}, 'session_start', " . DB::connection()->getPdo()->quote($now->timestamp) . ", '{$date}')";
+                
+                // Update the values string
+                $values = implode(', ', $values);
+                
+                // Re-insert the stats with the new session and bounce data
+                DB::statement("INSERT INTO `stats` (`website_id`, `name`, `value`, `date`) VALUES {$values} ON DUPLICATE KEY UPDATE `count` = `count` + 1;");
+            } else {
+                // If this is not the first hit in the session, it's not a bounce
+                // So we need to decrement the bounce count if it was previously counted
+                DB::statement("UPDATE `stats` SET `count` = `count` - 1 WHERE `website_id` = {$website->id} AND `name` = 'bounce' AND `date` = '{$date}' AND `count` > 0;");
+                
+                // Update the session duration
+                // Get the session start time
+                $sessionStart = DB::table('stats')
+                    ->where('website_id', '=', $website->id)
+                    ->where('name', '=', 'session_start')
+                    ->where('date', '=', $date)
+                    ->value('value');
+                    
+                if ($sessionStart) {
+                    $sessionDuration = $now->timestamp - intval($sessionStart);
+                    
+                    // Store the session duration in seconds
+                    DB::statement("INSERT INTO `stats` (`website_id`, `name`, `value`, `date`) 
+                        VALUES ({$website->id}, 'session_duration', {$sessionDuration}, '{$date}') 
+                        ON DUPLICATE KEY UPDATE `value` = {$sessionDuration}, `count` = `count` + 1;");
+                    
+                    // Record current page as potential exit page
+                    DB::statement("INSERT INTO `stats` (`website_id`, `name`, `value`, `date`) 
+                        VALUES ({$website->id}, 'exit_page', " . DB::connection()->getPdo()->quote(mb_substr($data['page'], 0, 255)) . ", '{$date}') 
+                        ON DUPLICATE KEY UPDATE `count` = `count` + 1;");
+                }
+            }
+            
+            // Store the visitor identifier in recents table for session tracking
+            DB::statement("UPDATE `recents` SET `ip_address` = ?, `user_agent` = ? WHERE `id` = LAST_INSERT_ID()", [
+                $request->ip(),
+                $request->header('User-Agent') ?? ''
+            ]);
         }
 
         return 200;

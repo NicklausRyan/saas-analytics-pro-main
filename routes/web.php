@@ -198,10 +198,9 @@ Route::prefix('/developers')->group(function () {
 Route::prefix('/{id}')->group(function () {
     Route::get('/', 'StatController@index')->name('stats.overview');
 
-    Route::get('/realtime', 'StatController@realTime')->name('stats.realtime');
-
-    Route::get('/pages', 'StatController@pages')->name('stats.pages');
+    Route::get('/realtime', 'StatController@realTime')->name('stats.realtime');    Route::get('/pages', 'StatController@pages')->name('stats.pages');
     Route::get('/landing_pages', 'StatController@landingPages')->name('stats.landing_pages');
+    Route::get('/exit_pages', 'StatController@exitPages')->name('stats.exit_pages');
 
     Route::get('/referrers', 'StatController@referrers')->name('stats.referrers');
     Route::get('/search-engines', 'StatController@searchEngines')->name('stats.search_engines');
@@ -218,11 +217,10 @@ Route::prefix('/{id}')->group(function () {
     Route::get('/screen-resolutions', 'StatController@screenResolutions')->name('stats.screen_resolutions');
     Route::get('/devices', 'StatController@devices')->name('stats.devices');
 
-    Route::get('/events', 'StatController@events')->name('stats.events');
-
-    Route::prefix('/export')->group(function () {
+    Route::get('/events', 'StatController@events')->name('stats.events');    Route::prefix('/export')->group(function () {
         Route::get('/pages', 'StatController@exportPages')->name('stats.export.pages');
         Route::get('/landing_pages', 'StatController@exportLandingPages')->name('stats.export.landing_pages');
+        Route::get('/exit_pages', 'StatController@exportExitPages')->name('stats.export.exit_pages');
 
         Route::get('/referrers', 'StatController@exportReferrers')->name('stats.export.referrers');
         Route::get('/search-engines', 'StatController@exportSearchEngines')->name('stats.export.search_engines');

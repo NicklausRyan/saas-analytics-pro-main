@@ -1,12 +1,12 @@
 <div class="d-flex mb-3">
     <nav class="navbar navbar-expand-xl navbar-light w-100 p-0 bg-base-0 rounded shadow-sm">
-        <div class="d-flex align-items-center d-xl-none px-3 py-3 font-weight-medium text-muted">
-            @php
+        <div class="d-flex align-items-center d-xl-none px-3 py-3 font-weight-medium text-muted">            @php
                 $menu = [
                     'stats.realtime' => ['Realtime', 'adjust'],
                     'stats.overview' => ['Overview', 'assesment'],
                     'stats.pages' => ['Pages', 'description'],
                     'stats.landing_pages' => ['Landing pages', 'flight-land'],
+                    'stats.exit_pages' => ['Exit pages', 'flight-takeoff'],
                     'stats.referrers' => ['Referrers', 'link'],
                     'stats.search_engines' => ['Search engines', 'search'],
                     'stats.social_networks' => ['Social networks', 'share'],
@@ -47,18 +47,17 @@
                         <span class="d-flex align-items-center">@include('icons.assesment', ['class' => 'fill-current width-4 height-4 '.(__('lang_dir') == 'rtl' ? 'ml-2' : 'mr-2')])</span>
                         <span>{{ __('Overview') }}</span>
                     </a>
-                </li>
-
-                <li class="nav-item dropdown">
-                    <a class="nav-link d-flex align-items-center font-weight-medium py-3 px-3 {{ in_array(Route::currentRouteName(), ['stats.pages', 'stats.landing_pages']) ? 'active' : '' }}" href="#" id="behaviorDropdown" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                </li>                <li class="nav-item dropdown">
+                    <a class="nav-link d-flex align-items-center font-weight-medium py-3 px-3 {{ in_array(Route::currentRouteName(), ['stats.pages', 'stats.landing_pages', 'stats.exit_pages']) ? 'active' : '' }}" href="#" id="behaviorDropdown" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
                         @include('icons.web', ['class' => 'fill-current width-4 height-4 '.(__('lang_dir') == 'rtl' ? 'ml-2' : 'mr-2')])
                         <div>{{ __('Behavior') }}</div>
                         @include('icons.expand-more', ['class' => 'fill-current width-3 height-3 '.(__('lang_dir') == 'rtl' ? 'mr-2' : 'ml-2')])
-                    </a>
-                    <div class="dropdown-menu border-0 shadow {{ (__('lang_dir') == 'rtl' ? 'dropdown-menu-right' : 'dropdown-menu') }}" aria-labelledby="behaviorDropdown">
+                    </a><div class="dropdown-menu border-0 shadow {{ (__('lang_dir') == 'rtl' ? 'dropdown-menu-right' : 'dropdown-menu') }}" aria-labelledby="behaviorDropdown">
                         <a class="dropdown-item {{ Route::currentRouteName() == 'stats.pages' ? 'active' : '' }}" href="{{ route('stats.pages', ['id' => $website->domain, 'from' => $range['from'], 'to' => $range['to']]) }}">{{ __('Pages') }}</a>
 
                         <a class="dropdown-item {{ Route::currentRouteName() == 'stats.landing_pages' ? 'active' : '' }}" href="{{ route('stats.landing_pages', ['id' => $website->domain, 'from' => $range['from'], 'to' => $range['to']]) }}">{{ __('Landing pages') }}</a>
+
+                        <a class="dropdown-item {{ Route::currentRouteName() == 'stats.exit_pages' ? 'active' : '' }}" href="{{ route('stats.exit_pages', ['id' => $website->domain, 'from' => $range['from'], 'to' => $range['to']]) }}">{{ __('Exit pages') }}</a>
                     </div>
                 </li>
 
