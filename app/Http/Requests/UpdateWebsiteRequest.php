@@ -37,11 +37,11 @@ class UpdateWebsiteRequest extends FormRequest
     {
         return [
             'privacy' => ['sometimes', 'required', 'integer', 'between:0,2'],
-            'password' => [(in_array($this->input('privacy'), [0, 1]) ? 'nullable' : 'sometimes'), 'string', 'min:1', 'max:128'],
-            'exclude_bots' => ['sometimes', 'integer', 'between:0,1'],
+            'password' => [(in_array($this->input('privacy'), [0, 1]) ? 'nullable' : 'sometimes'), 'string', 'min:1', 'max:128'],            'exclude_bots' => ['sometimes', 'integer', 'between:0,1'],
             'exclude_ips' => ['sometimes', 'nullable', 'string'],
             'exclude_params' => ['sometimes', 'nullable', 'string'],
-            'email' => ['sometimes', 'nullable', 'integer']
+            'email' => ['sometimes', 'nullable', 'integer'],
+            'stripe_api_key' => ['sometimes', 'nullable', 'string', 'max:255']
         ];
     }
 }

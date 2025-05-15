@@ -72,9 +72,7 @@ class Website extends Model
     public function stats()
     {
         return $this->hasMany('App\Models\Stat')->where('website_id', $this->id);
-    }
-
-    /**
+    }    /**
      * Get the website's recent stats.
      *
      * @return \Illuminate\Database\Eloquent\Relations\HasMany
@@ -82,6 +80,16 @@ class Website extends Model
     public function recents()
     {
         return $this->hasMany('App\Models\Recent')->where('website_id', $this->id);
+    }
+    
+    /**
+     * Get the website's revenue data.
+     *
+     * @return \Illuminate\Database\Eloquent\Relations\HasMany
+     */
+    public function revenue()
+    {
+        return $this->hasMany('App\Models\Revenue');
     }
 
     /**
@@ -92,6 +100,25 @@ class Website extends Model
     public function setPasswordAttribute($value)
     {
         $this->attributes['password'] = Crypt::encryptString($value);
+    }/**
+     * Set the website's Stripe API key.
+     *
+     * @param $value
+     */
+    public function setStripeApiKeyAttribute($value)
+    {
+        $this->attributes['stripe_api_key'] = $value ? Crypt::encryptString($value) : null;
+    }
+
+    /**
+     * Get the decrypted Stripe API key.
+     *
+     * @param $value
+     * @return string|null
+     */
+    public function getStripeApiKeyAttribute($value)
+    {
+        return $value ? Crypt::decryptString($value) : null;
     }
 
     /**

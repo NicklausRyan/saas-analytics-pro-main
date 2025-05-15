@@ -319,12 +319,54 @@ class StatController extends Controller
             ->appends(['from' => $range['from'], 'to' => $range['to'], 'search' => $search, 'search_by' => $searchBy, 'sort_by' => $sortBy, 'sort' => $sort]);
 
         $first = $this->getExitPages($website, $range, $search, $searchBy, 'count', 'desc')
-            ->first();
-
-        $last = $this->getExitPages($website, $range, $search, $searchBy, 'count', 'asc')
+            ->first();        $last = $this->getExitPages($website, $range, $search, $searchBy, 'count', 'asc')
             ->first();
 
         return view('stats.container', ['view' => 'exit-pages', 'website' => $website, 'range' => $range, 'export' => 'stats.export.exit_pages', 'exitPages' => $exitPages, 'first' => $first, 'last' => $last, 'total' => $total]);
+    }
+
+    /**
+     * Show the Revenue stats page.
+     *
+     * @param Request $request
+     * @param $id
+     * @return \Illuminate\Contracts\Foundation\Application|\Illuminate\Contracts\View\Factory|\Illuminate\View\View
+     */
+    public function revenue(Request $request, $id)
+    {
+        $website = Website::where('domain', $id)->firstOrFail();
+
+        if ($this->statsGuard($website)) {
+            return view('stats.password', ['website' => $website]);
+        };
+
+        $range = $this->range();
+        $search = $request->input('search');
+        $searchBy = in_array($request->input('search_by'), ['order_id', 'currency']) ? $request->input('search_by') : 'order_id';
+        $sortBy = in_array($request->input('sort_by'), ['amount', 'date', 'currency']) ? $request->input('sort_by') : 'date';
+        $sort = in_array($request->input('sort'), ['asc', 'desc']) ? $request->input('sort') : 'desc';
+        $perPage = in_array($request->input('per_page'), [10, 25, 50, 100]) ? $request->input('per_page') : config('settings.paginate');
+
+        // Get revenue data
+        $revenueQuery = $this->getRevenue($website, $range, $search, $searchBy, $sortBy, $sort);
+        $revenue = $revenueQuery->paginate($perPage)
+            ->appends(['from' => $range['from'], 'to' => $range['to'], 'search' => $search, 'search_by' => $searchBy, 'sort_by' => $sortBy, 'sort' => $sort]);
+
+        // Calculate total revenue
+        $totalRevenue = $this->getRevenue($website, $range)->sum('amount');
+        
+        // Get revenue by day (for chart)
+        $revenueByDay = $this->getRevenueByDay($website, $range);
+        
+        return view('stats.container', [
+            'view' => 'revenue', 
+            'website' => $website, 
+            'range' => $range, 
+            'export' => 'stats.export.revenue',
+            'revenue' => $revenue,
+            'totalRevenue' => $totalRevenue,
+            'revenueByDay' => $revenueByDay
+        ]);
     }
 
     /**
@@ -903,9 +945,7 @@ class StatController extends Controller
 
 
         return $this->exportCSV($request, $website, __('Landing pages'), $range, __('URL'), __('Visitors'), $this->getLandingPages($website, $range, $search, $searchBy, $sortBy, $sort)->get());
-    }
-
-    /**
+    }    /**
      * Export the Exit Pages stats.
      *
      * @param Request $request
@@ -929,6 +969,50 @@ class StatController extends Controller
 
 
         return $this->exportCSV($request, $website, __('Exit pages'), $range, __('URL'), __('Visitors'), $this->getExitPages($website, $range, $search, $searchBy, $sortBy, $sort)->get());
+    }
+    
+    /**
+     * Export the Revenue stats.
+     *
+     * @param Request $request
+     * @param $id
+     * @return \Illuminate\Contracts\Foundation\Application|\Illuminate\Contracts\View\Factory|\Illuminate\View\View|CSV\Writer
+     * @throws CSV\CannotInsertRecord
+     */
+    public function exportRevenue(Request $request, $id)
+    {
+        $website = Website::where('domain', $id)->firstOrFail();
+
+        if ($this->statsGuard($website)) {
+            return view('stats.password', ['website' => $website]);
+        };
+
+        $range = $this->range();
+        $search = $request->input('search');
+        $searchBy = in_array($request->input('search_by'), ['order_id', 'currency']) ? $request->input('search_by') : 'order_id';
+        $sortBy = in_array($request->input('sort_by'), ['amount', 'date', 'currency']) ? $request->input('sort_by') : 'date';
+        $sort = in_array($request->input('sort'), ['asc', 'desc']) ? $request->input('sort') : 'desc';
+
+        $revenue = $this->getRevenue($website, $range, $search, $searchBy, $sortBy, $sort)->get();
+        
+        $csv = CSV\Writer::createFromFileObject(new \SplTempFileObject);
+
+        $csv->setDelimiter(',');
+        $csv->setEnclosure('"');
+        $csv->setEscape('\\');
+
+        $csv->insertOne([__('Date'), __('Amount'), __('Currency'), __('Order ID')]);
+
+        foreach ($revenue as $row) {
+            $csv->insertOne([$row->date, $row->amount, $row->currency, $row->order_id]);
+        }
+
+        return response($csv->getContent())
+            ->withHeaders([
+                'Content-Type' => 'text/csv',
+                'Content-Transfer-Encoding' => 'binary',
+                'Content-Disposition' => 'attachment; filename="' . formatTitle([$website->domain, __('Revenue'), $range['from'], $range['to'], config('settings.title')]) . '.csv"',
+            ]);
     }
 
     /**
@@ -1311,9 +1395,7 @@ class StatController extends Controller
             ->whereBetween('date', [$range['from'], $range['to']])
             ->groupBy('value')
             ->orderBy($sortBy, $sort);
-    }
-
-    /**
+    }    /**
      * Get the Exit Pages.
      *
      * @param $website
@@ -1332,6 +1414,74 @@ class StatController extends Controller
             ->whereBetween('date', [$range['from'], $range['to']])
             ->groupBy('value')
             ->orderBy($sortBy, $sort);
+    }
+    
+    /**
+     * Get the Revenue data.
+     *
+     * @param $website
+     * @param $range
+     * @param null $search
+     * @param null $searchBy
+     * @param null $sortBy
+     * @param null $sort
+     * @return \Illuminate\Database\Eloquent\Builder
+     */
+    private function getRevenue($website, $range, $search = null, $searchBy = null, $sortBy = null, $sort = null)
+    {
+        $query = \App\Models\Revenue::where('website_id', '=', $website->id)
+            ->whereBetween('date', [$range['from'], $range['to']]);
+            
+        if ($search) {
+            if ($searchBy == 'order_id') {
+                $query->where('order_id', 'like', '%' . $search . '%');
+            } elseif ($searchBy == 'currency') {
+                $query->where('currency', 'like', '%' . $search . '%');
+            }
+        }
+        
+        if ($sortBy && $sort) {
+            $query->orderBy($sortBy, $sort);
+        }
+            
+        return $query;
+    }
+    
+    /**
+     * Get the Revenue data grouped by day.
+     *
+     * @param $website
+     * @param $range
+     * @return array
+     */
+    private function getRevenueByDay($website, $range)
+    {
+        $data = \App\Models\Revenue::selectRaw('date, SUM(amount) as total')
+            ->where('website_id', '=', $website->id)
+            ->whereBetween('date', [$range['from'], $range['to']])
+            ->groupBy('date')
+            ->orderBy('date', 'asc')
+            ->get()
+            ->keyBy('date')
+            ->map(function ($item) {
+                return $item->total;
+            })
+            ->toArray();
+            
+        $revenueMap = [];
+        
+        $startDate = Carbon::createFromFormat('Y-m-d', $range['from']);
+        $endDate = Carbon::createFromFormat('Y-m-d', $range['to']);
+        
+        while($startDate->lte($endDate)) {
+            $date = $startDate->format('Y-m-d');
+            
+            $revenueMap[$date] = isset($data[$date]) ? (float)$data[$date] : 0;
+            
+            $startDate->addDay();
+        }
+        
+        return $revenueMap;
     }
 
     /**

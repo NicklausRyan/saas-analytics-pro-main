@@ -187,7 +187,30 @@
                 </div>
             </div>
 
-            <hr>
+            <hr>            <hr>
+
+            <div class="form-group">
+                <div class="row">
+                    <div class="col"><label for="i-stripe-api-key">{{ __('Stripe API Key') }} <span class="badge badge-success">New</span></label></div>
+                </div>
+                <div class="input-group mb-3">
+                    <div class="input-group-prepend">
+                        <span class="input-group-text">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-stripe" viewBox="0 0 16 16">
+                                <path d="M2 0a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V2a2 2 0 0 0-2-2H2ZM1 2a1 1 0 0 1 1-1h12a1 1 0 0 1 1 1v12a1 1 0 0 1-1 1H2a1 1 0 0 1-1-1V2Z"/>
+                                <path d="M11 5.5h-1v-1a1 1 0 0 0-1.5-.5v4.273c0 .12.1.215.22.222.435.04.794.40.84.838v.682c0 .678-.585 1.261-1.26 1.26-1.172-.003-1.912-.942-1.908-1.944H8.5v.01c.012 1.175.954 1.93 2.090 1.925 1.027-.005 1.766-.788 1.77-1.562V8.11a1.153 1.153 0 0 0-.66-.782V5.5ZM9.5 8.089v.627c0 .34-.275.616-.616.616A.616.616 0 0 1 8.27 8.71V6.283c.062-.183.222-.308.399-.309a.422.422 0 0 1 .435.404c.002.515.001 1.19.001 1.701l.394.01Z"/>
+                            </svg>
+                        </span>
+                    </div>
+                    <input type="text" dir="ltr" name="stripe_api_key" class="form-control{{ $errors->has('stripe_api_key') ? ' is-invalid' : '' }}" id="i-stripe-api-key" value="{{ old('stripe_api_key') ?? $website->stripe_api_key }}" placeholder="sk_test_...">
+                    @if ($errors->has('stripe_api_key'))
+                        <span class="invalid-feedback" role="alert">
+                            <strong>{{ $errors->first('stripe_api_key') }}</strong>
+                        </span>
+                    @endif
+                </div>
+                <small class="form-text text-muted">{{ __('Enter your Stripe restricted API key to connect revenue tracking. Use a key with limited permissions for security.') }}</small>
+            </div>
 
             <div class="form-group">
                 @include('shared.tracking-code')

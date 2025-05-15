@@ -44,11 +44,11 @@ class StoreWebsiteRequest extends FormRequest
         return [
             'domain' => ['required', 'max:255', new ValidateDomainNameRule(), 'unique:websites,domain', new ValidateBadWordsRule(), new WebsiteLimitGateRule($this->user())],
             'privacy' => ['nullable', 'integer', 'between:0,2'],
-            'password' => [Rule::requiredIf($this->input('privacy') == 2), 'nullable', 'string', 'min:1', 'max:128'],
-            'exclude_bots' => ['nullable', 'integer', 'between:0,1'],
+            'password' => [Rule::requiredIf($this->input('privacy') == 2), 'nullable', 'string', 'min:1', 'max:128'],            'exclude_bots' => ['nullable', 'integer', 'between:0,1'],
             'exclude_params' => ['nullable', 'string'],
             'exclude_ips' => ['nullable', 'string'],
-            'email' => ['nullable', 'integer']
+            'email' => ['nullable', 'integer'],
+            'stripe_api_key' => ['nullable', 'string', 'max:255']
         ];
     }
 }

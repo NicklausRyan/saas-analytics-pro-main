@@ -30,3 +30,5 @@ Route::prefix('v1')->middleware('auth:api')->group(function () {
 });
 
 Route::post('event', 'API\EventController@index')->name('event');
+Route::post('stripe-webhook/{id}', 'API\StripeWebhookController@handleWebhook')->name('stripe.webhook');
+Route::post('track-revenue', 'API\RevenueController@track')->name('revenue.track');

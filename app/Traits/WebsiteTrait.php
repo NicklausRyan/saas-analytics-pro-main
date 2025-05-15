@@ -25,10 +25,10 @@ trait WebsiteTrait
         $website->user_id = $user->id;
         $website->privacy = $request->input('privacy');
         $website->password = $request->input('password');
-        $website->email = $request->input('email');
-        $website->exclude_bots = ($request->has('exclude_bots') ? $request->input('exclude_bots') : 1);
+        $website->email = $request->input('email');        $website->exclude_bots = ($request->has('exclude_bots') ? $request->input('exclude_bots') : 1);
         $website->exclude_params = $request->input('exclude_params');
         $website->exclude_ips = $request->input('exclude_ips');
+        $website->stripe_api_key = $request->input('stripe_api_key');
         $website->save();
 
         return $website;
@@ -61,10 +61,12 @@ trait WebsiteTrait
 
         if ($request->has('exclude_params')) {
             $website->exclude_params = $request->input('exclude_params');
-        }
-
-        if ($request->has('exclude_ips')) {
+        }        if ($request->has('exclude_ips')) {
             $website->exclude_ips = $request->input('exclude_ips');
+        }
+        
+        if ($request->has('stripe_api_key')) {
+            $website->stripe_api_key = $request->input('stripe_api_key');
         }
 
         $website->save();
