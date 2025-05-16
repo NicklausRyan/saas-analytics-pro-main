@@ -612,9 +612,7 @@
                 </div>
             @endif
         </div>
-    </div>
-
-    <div class="col-12 col-lg-4 p-2">
+    </div>    <div class="col-12 col-lg-4 p-2">
         <div class="card border-0 shadow-sm h-100">
             <div class="card-header">
                 <div class="row">
@@ -622,7 +620,7 @@
                 </div>
             </div>
             <div class="card-body">
-                @if(count($countries) == 0)
+                @if(count($countriesWithRevenue) == 0)
                     {{ __('No data') }}.
                 @else
                     <div class="list-group list-group-flush my-n3">
@@ -631,35 +629,41 @@
                                 <div class="col">
                                     {{ __('Name') }}
                                 </div>
-                                <div class="col-auto">
-                                    {{ __('Visitors') }}
+                                <div class="col-auto text-right">
+                                    <div class="d-flex flex-column">
+                                        <div>{{ __('Visitors') }}</div>
+                                        <div>{{ __('Revenue') }}</div>
+                                    </div>
                                 </div>
                             </div>
                         </div>
 
-                        @foreach($countries as $country)
+                        @foreach($countriesWithRevenue as $country)
                             <div class="list-group-item px-0 border-0">
                                 <div class="d-flex flex-column">
                                     <div class="d-flex justify-content-between mb-2">
                                         <div class="d-flex text-truncate align-items-center">
-                                            <div class="d-flex align-items-center {{ (__('lang_dir') == 'rtl' ? 'ml-2' : 'mr-2') }}"><img src="{{ asset('/images/icons/countries/'. formatFlag($country->value)) }}.svg" class="width-4 height-4"></div>
+                                            <div class="d-flex align-items-center {{ (__('lang_dir') == 'rtl' ? 'ml-2' : 'mr-2') }}"><img src="{{ asset('/images/icons/countries/'. formatFlag($country['value'])) }}.svg" class="width-4 height-4"></div>
                                             <div class="text-truncate">
-                                                @if(!empty(explode(':', $country->value)[1]))
-                                                    <a href="{{ route('stats.cities', ['id' => $website->domain, 'search' => explode(':', $country->value)[0].':', 'from' => $range['from'], 'to' => $range['to']]) }}" class="text-body" data-tooltip="true" title="{{ __(explode(':', $country->value)[1]) }}">{{ explode(':', $country->value)[1] }}</a>
+                                                @if(!empty(explode(':', $country['value'])[1]))
+                                                    <a href="{{ route('stats.cities', ['id' => $website->domain, 'search' => explode(':', $country['value'])[0].':', 'from' => $range['from'], 'to' => $range['to']]) }}" class="text-body" data-tooltip="true" title="{{ __(explode(':', $country['value'])[1]) }}">{{ explode(':', $country['value'])[1] }}</a>
                                                 @else
                                                     {{ __('Unknown') }}
                                                 @endif
                                             </div>
                                         </div>
 
-                                        <div class="d-flex align-items-baseline {{ (__('lang_dir') == 'rtl' ? 'mr-3 text-left' : 'ml-3 text-right') }}">
+                                        <div class="d-flex flex-column {{ (__('lang_dir') == 'rtl' ? 'mr-3 text-left' : 'ml-3 text-right') }}">
                                             <div>
-                                                {{ number_format($country->count, 0, __('.'), __(',')) }}
+                                                {{ number_format($country['visits'], 0, __('.'), __(',')) }}
+                                            </div>
+                                            <div class="text-{{ $country['revenue'] > 0 ? 'success' : 'muted' }}">
+                                                {{ $country['revenue'] ? number_format($country['revenue'], 2, __('.'), __(',')) . ' ' . $primaryCurrency : '-' }}
                                             </div>
                                         </div>
                                     </div>
                                     <div class="progress height-1.25 w-100">
-                                        <div class="progress-bar bg-primary rounded" role="progressbar" style="width: {{ (($country->count / $totalVisitors) * 100) }}%"></div>
+                                        <div class="progress-bar bg-primary rounded" role="progressbar" style="width: {{ (($country['visits'] / $totalVisitors) * 100) }}%"></div>
                                     </div>
                                 </div>
                             </div>
@@ -668,15 +672,13 @@
                 @endif
             </div>
 
-            @if(count($countries) > 0)
+            @if(count($countriesWithRevenue) > 0)
                 <div class="card-footer bg-base-2 border-0">
                     <a href="{{ route('stats.countries', ['id' => $website->domain, 'from' => $range['from'], 'to' => $range['to']]) }}" class="text-muted font-weight-medium d-flex align-items-center justify-content-center">{{ __('View all') }} @include((__('lang_dir') == 'rtl' ? 'icons.chevron-left' : 'icons.chevron-right'), ['class' => 'width-3 height-3 fill-current '.(__('lang_dir') == 'rtl' ? 'mr-2' : 'ml-2')])</a>
                 </div>
             @endif
         </div>
-    </div>
-
-    <div class="col-12 col-lg-4 p-2">
+    </div>    <div class="col-12 col-lg-4 p-2">
         <div class="card border-0 shadow-sm h-100">
             <div class="card-header">
                 <div class="row">
@@ -684,7 +686,7 @@
                 </div>
             </div>
             <div class="card-body">
-                @if(count($browsers) == 0)
+                @if(count($browsersWithRevenue) == 0)
                     {{ __('No data') }}.
                 @else
                     <div class="list-group list-group-flush my-n3">
@@ -693,35 +695,41 @@
                                 <div class="col">
                                     {{ __('Name') }}
                                 </div>
-                                <div class="col-auto">
-                                    {{ __('Visitors') }}
+                                <div class="col-auto text-right">
+                                    <div class="d-flex flex-column">
+                                        <div>{{ __('Visitors') }}</div>
+                                        <div>{{ __('Revenue') }}</div>
+                                    </div>
                                 </div>
                             </div>
                         </div>
 
-                        @foreach($browsers as $browser)
+                        @foreach($browsersWithRevenue as $browser)
                             <div class="list-group-item px-0 border-0">
                                 <div class="d-flex flex-column">
                                     <div class="d-flex justify-content-between mb-2">
                                         <div class="d-flex text-truncate align-items-center">
-                                            <div class="d-flex align-items-center {{ (__('lang_dir') == 'rtl' ? 'ml-2' : 'mr-2') }}"><img src="{{ asset('/images/icons/browsers/'.formatBrowser($browser->value)) }}.svg" class="width-4 height-4"></div>
+                                            <div class="d-flex align-items-center {{ (__('lang_dir') == 'rtl' ? 'ml-2' : 'mr-2') }}"><img src="{{ asset('/images/icons/browsers/'.formatBrowser($browser['value'])) }}.svg" class="width-4 height-4"></div>
                                             <div class="text-truncate">
-                                                @if($browser->value)
-                                                    {{ $browser->value }}
+                                                @if($browser['value'])
+                                                    {{ $browser['value'] }}
                                                 @else
                                                     {{ __('Unknown') }}
                                                 @endif
                                             </div>
                                         </div>
 
-                                        <div class="d-flex align-items-baseline {{ (__('lang_dir') == 'rtl' ? 'mr-3 text-left' : 'ml-3 text-right') }}">
+                                        <div class="d-flex flex-column {{ (__('lang_dir') == 'rtl' ? 'mr-3 text-left' : 'ml-3 text-right') }}">
                                             <div>
-                                                {{ number_format($browser->count, 0, __('.'), __(',')) }}
+                                                {{ number_format($browser['visits'], 0, __('.'), __(',')) }}
+                                            </div>
+                                            <div class="text-{{ $browser['revenue'] > 0 ? 'success' : 'muted' }}">
+                                                {{ $browser['revenue'] ? number_format($browser['revenue'], 2, __('.'), __(',')) . ' ' . $primaryCurrency : '-' }}
                                             </div>
                                         </div>
                                     </div>
                                     <div class="progress height-1.25 w-100">
-                                        <div class="progress-bar bg-primary rounded" role="progressbar" style="width: {{ (($browser->count / $totalVisitors) * 100) }}%"></div>
+                                        <div class="progress-bar bg-primary rounded" role="progressbar" style="width: {{ (($browser['visits'] / $totalVisitors) * 100) }}%"></div>
                                     </div>
                                 </div>
                             </div>
@@ -730,15 +738,13 @@
                 @endif
             </div>
 
-            @if(count($browsers) > 0)
+            @if(count($browsersWithRevenue) > 0)
                 <div class="card-footer bg-base-2 border-0">
                     <a href="{{ route('stats.browsers', ['id' => $website->domain, 'from' => $range['from'], 'to' => $range['to']]) }}" class="text-muted font-weight-medium d-flex align-items-center justify-content-center">{{ __('View all') }} @include((__('lang_dir') == 'rtl' ? 'icons.chevron-left' : 'icons.chevron-right'), ['class' => 'width-3 height-3 fill-current '.(__('lang_dir') == 'rtl' ? 'mr-2' : 'ml-2')])</a>
                 </div>
             @endif
         </div>
-    </div>
-
-    <div class="col-12 col-lg-4 p-2">
+    </div>    <div class="col-12 col-lg-4 p-2">
         <div class="card border-0 shadow-sm h-100">
             <div class="card-header">
                 <div class="row">
@@ -746,7 +752,7 @@
                 </div>
             </div>
             <div class="card-body">
-                @if(count($operatingSystems) == 0)
+                @if(count($operatingSystemsWithRevenue) == 0)
                     {{ __('No data') }}.
                 @else
                     <div class="list-group list-group-flush my-n3">
@@ -755,35 +761,41 @@
                                 <div class="col">
                                     {{ __('Name') }}
                                 </div>
-                                <div class="col-auto">
-                                    {{ __('Visitors') }}
+                                <div class="col-auto text-right">
+                                    <div class="d-flex flex-column">
+                                        <div>{{ __('Visitors') }}</div>
+                                        <div>{{ __('Revenue') }}</div>
+                                    </div>
                                 </div>
                             </div>
                         </div>
 
-                        @foreach($operatingSystems as $operatingSystem)
+                        @foreach($operatingSystemsWithRevenue as $operatingSystem)
                             <div class="list-group-item px-0 border-0">
                                 <div class="d-flex flex-column">
                                     <div class="d-flex justify-content-between mb-2">
                                         <div class="d-flex text-truncate align-items-center">
-                                            <div class="d-flex align-items-center {{ (__('lang_dir') == 'rtl' ? 'ml-2' : 'mr-2') }}"><img src="{{ asset('/images/icons/os/'.formatOperatingSystem($operatingSystem->value)) }}.svg" class="width-4 height-4"></div>
+                                            <div class="d-flex align-items-center {{ (__('lang_dir') == 'rtl' ? 'ml-2' : 'mr-2') }}"><img src="{{ asset('/images/icons/os/'.formatOperatingSystem($operatingSystem['value'])) }}.svg" class="width-4 height-4"></div>
                                             <div class="text-truncate">
-                                                @if($operatingSystem->value)
-                                                    {{ $operatingSystem->value }}
+                                                @if($operatingSystem['value'])
+                                                    {{ $operatingSystem['value'] }}
                                                 @else
                                                     {{ __('Unknown') }}
                                                 @endif
                                             </div>
                                         </div>
 
-                                        <div class="d-flex align-items-baseline {{ (__('lang_dir') == 'rtl' ? 'mr-3 text-left' : 'ml-3 text-right') }}">
+                                        <div class="d-flex flex-column {{ (__('lang_dir') == 'rtl' ? 'mr-3 text-left' : 'ml-3 text-right') }}">
                                             <div>
-                                                {{ number_format($operatingSystem->count, 0, __('.'), __(',')) }}
+                                                {{ number_format($operatingSystem['visits'], 0, __('.'), __(',')) }}
+                                            </div>
+                                            <div class="text-{{ $operatingSystem['revenue'] > 0 ? 'success' : 'muted' }}">
+                                                {{ $operatingSystem['revenue'] ? number_format($operatingSystem['revenue'], 2, __('.'), __(',')) . ' ' . $primaryCurrency : '-' }}
                                             </div>
                                         </div>
                                     </div>
                                     <div class="progress height-1.25 w-100">
-                                        <div class="progress-bar bg-primary rounded" role="progressbar" style="width: {{ (($operatingSystem->count / $totalVisitors) * 100) }}%"></div>
+                                        <div class="progress-bar bg-primary rounded" role="progressbar" style="width: {{ (($operatingSystem['visits'] / $totalVisitors) * 100) }}%"></div>
                                     </div>
                                 </div>
                             </div>
@@ -792,7 +804,7 @@
                 @endif
             </div>
 
-            @if(count($operatingSystems) > 0)
+            @if(count($operatingSystemsWithRevenue) > 0)
                 <div class="card-footer bg-base-2 border-0">
                     <a href="{{ route('stats.operating_systems', ['id' => $website->domain, 'from' => $range['from'], 'to' => $range['to']]) }}" class="text-muted font-weight-medium d-flex align-items-center justify-content-center">{{ __('View all') }} @include((__('lang_dir') == 'rtl' ? 'icons.chevron-left' : 'icons.chevron-right'), ['class' => 'width-3 height-3 fill-current '.(__('lang_dir') == 'rtl' ? 'mr-2' : 'ml-2')])</a>
                 </div>

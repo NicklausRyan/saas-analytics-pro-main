@@ -67,6 +67,7 @@ class StatController extends Controller
             ->limit(5)
             ->get();
 
+        // Get standard visitors statistics
         $countries = $this->getCountries($website, $range, null, null, 'count', 'desc')
             ->limit(5)
             ->get();
@@ -77,7 +78,14 @@ class StatController extends Controller
 
         $operatingSystems = $this->getOperatingSystems($website, $range, null, null, 'count', 'desc')
             ->limit(5)
-            ->get();        $events = $this->getEvents($website, $range, null, null, 'count', 'desc')
+            ->get();
+            
+        // Get attribution data with revenue metrics
+        $countriesWithRevenue = $this->getRevenueByCountry($website, $range);
+        $browsersWithRevenue = $this->getRevenueByBrowser($website, $range);
+        $operatingSystemsWithRevenue = $this->getRevenueByOperatingSystem($website, $range);
+        
+        $events = $this->getEvents($website, $range, null, null, 'count', 'desc')
             ->limit(5)
             ->get();
             
@@ -96,7 +104,9 @@ class StatController extends Controller
             
         $sessionCount = Stat::where([['website_id', '=', $website->id], ['name', '=', 'session']])
             ->whereBetween('date', [$range['from'], $range['to']])
-            ->sum('count');        // Safe calculation to avoid division by zero
+            ->sum('count');        
+            
+        // Safe calculation to avoid division by zero
         $avgSessionDuration = $sessionCount > 0 ? (int)($sessionDurationSum / $sessionCount) : 0;
         
         // Get revenue data for the dashboard
@@ -111,9 +121,11 @@ class StatController extends Controller
         $primaryCurrency = \App\Models\Revenue::where('website_id', '=', $website->id)
             ->orderBy('date', 'desc')
             ->value('currency') ?? '';
-              // Get revenue data by day for the chart
+            
+        // Get revenue data by day for the chart
         $revenueMap = $this->getRevenueByDay($website, $range);
-          // Calculate revenue per visitor
+        
+        // Calculate revenue per visitor
         $revenuePerVisitor = $totalVisitors > 0 ? $totalRevenue / $totalVisitors : 0;
         
         // Calculate conversion rate (revenue events / total sessions)
@@ -133,7 +145,10 @@ class StatController extends Controller
             'pageviewsMap' => $pageviewsMap, 
             'countries' => $countries, 
             'browsers' => $browsers, 
-            'operatingSystems' => $operatingSystems, 
+            'operatingSystems' => $operatingSystems,
+            'countriesWithRevenue' => $countriesWithRevenue,
+            'browsersWithRevenue' => $browsersWithRevenue,
+            'operatingSystemsWithRevenue' => $operatingSystemsWithRevenue,
             'events' => $events, 
             'totalVisitors' => $totalVisitors, 
             'totalPageviews' => $totalPageviews, 
@@ -142,7 +157,8 @@ class StatController extends Controller
             'totalReferrers' => $totalReferrers, 
             'bounceRate' => $bounceRate, 
             'avgSessionDuration' => $avgSessionDuration,
-            'totalRevenue' => $totalRevenue,            'totalRevenueOld' => $totalRevenueOld,
+            'totalRevenue' => $totalRevenue,
+            'totalRevenueOld' => $totalRevenueOld,
             'primaryCurrency' => $primaryCurrency,
             'revenueMap' => $revenueMap,
             'revenuePerVisitor' => $revenuePerVisitor,
@@ -1296,7 +1312,7 @@ class StatController extends Controller
 
 
         return $this->exportCSV($request, $website, __('Operating systems'), $range, __('Name'), __('Visitors'), $this->getOperatingSystems($website, $range, $search, $searchBy, $sortBy, $sort)->get());
-    }
+                   }
 
     /**
      * Export the Browsers stats.
@@ -1891,120 +1907,116 @@ class StatController extends Controller
     }
 
     /**
-     * Get the visitors or pageviews in a formatted way, based on the date range.
+     * Get aggregated revenue by country
      *
      * @param $website
      * @param $range
-     * @param $type
-     * @return array|int[]
+     * @return array
      */
-    private function getTraffic($website, $range, $type)
+    private function getRevenueByCountry($website, $range)
     {
-        // If the date range is for a single day
-        if ($range['unit'] == 'hour') {
-            $rows = Stat::where([['website_id', '=', $website->id], ['name', '=', $type . '_hours']])
-                ->whereBetween('date', [$range['from'], $range['to']])
-                ->orderBy('date', 'asc')
-                ->get();
-
-            $output = ['00' => 0, '01' => 0, '02' => 0, '03' => 0, '04' => 0, '05' => 0, '06' => 0, '07' => 0, '08' => 0, '09' => 0, '10' => 0, '11' => 0, '12' => 0, '13' => 0, '14' => 0, '15' => 0, '16' => 0, '17' => 0, '18' => 0, '19' => 0, '20' => 0, '21' => 0, '22' => 0, '23' => 0];
-
-            // Map the values to each date
-            foreach ($rows as $row) {
-                $output[$row->value] = $row->count;
-            }
-        } else {
-            $rows = Stat::select([
-                    DB::raw("date_format(`date`, '". str_replace(['Y', 'm', 'd'], ['%Y', '%m', '%d'], $range['format'])."') as `date_result`, SUM(`count`) as `aggregate`")
-                ])
-                ->where([['website_id', '=', $website->id], ['name', '=', $type]])
-                ->whereBetween('date', [$range['from'], $range['to']])
-                ->groupBy('date_result')
-                ->orderBy('date_result', 'asc')
-                ->get();
-
-            $rangeMap = $this->calcAllDates(Carbon::createFromFormat('Y-m-d', $range['from'])->format($range['format']), Carbon::createFromFormat('Y-m-d', $range['to'])->format($range['format']), $range['unit'], $range['format'], 0);
-
-            // Remap the result set, and format the array
-            $collection = $rows->mapWithKeys(function ($result) use ($range) {
-                return [strval($range['unit'] == 'year' ? $result->date_result : Carbon::parse($result->date_result)->format($range['format'])) => $result->aggregate];
-            })->all();
-
-            // Merge the results with the pre-calculated possible time ranges
-            $output = array_replace($rangeMap, $collection);
+        // Get all revenues in range
+        $revenueEvents = \App\Models\Revenue::where('website_id', '=', $website->id)
+            ->whereBetween('date', [$range['from'], $range['to']])
+            ->get();
+            
+        // Get countries stats
+        $countries = $this->getCountries($website, $range, null, null, 'count', 'desc')
+            ->limit(5)
+            ->get();
+            
+        // Prepare result data structure
+        $result = [];
+        
+        foreach ($countries as $country) {
+            $countryCode = explode(':', $country->value)[0] ?? '';
+            
+            // Sum revenue for this country
+            $countryRevenue = $revenueEvents->where('country_code', $countryCode)->sum('amount');
+            
+            $result[] = [
+                'value' => $country->value,
+                'visits' => $country->count, 
+                'revenue' => $countryRevenue,
+                'revenuePerVisitor' => $country->count > 0 ? $countryRevenue / $country->count : 0
+            ];
         }
-        return $output;
+        
+        return $result;
     }
-
+    
     /**
-     * List of Social Networks domains.
+     * Get aggregated revenue by browser
      *
-     * @return string[]
-     */
-    private function getSocialNetworksList()
-    {
-        return ['l.facebook.com', 't.co', 'l.instagram.com', 'out.reddit.com', 'www.youtube.com', 'away.vk.com', 't.umblr.com', 'www.pinterest.com'];
-    }
-
-    /**
-     * List of Search Engine domains.
-     *
-     * @return string[]
-     */
-    private function getSearchEnginesList()
-    {
-        return ['www.google.com', 'www.google.com', 'www.google.ad', 'www.google.ae', 'www.google.com.af', 'www.google.com.ag', 'www.google.com.ai', 'www.google.al', 'www.google.am', 'www.google.co.ao', 'www.google.com.ar', 'www.google.as', 'www.google.at', 'www.google.com.au', 'www.google.az', 'www.google.ba', 'www.google.com.bd', 'www.google.be', 'www.google.bf', 'www.google.bg', 'www.google.com.bh', 'www.google.bi', 'www.google.bj', 'www.google.com.bn', 'www.google.com.bo', 'www.google.com.br', 'www.google.bs', 'www.google.bt', 'www.google.co.bw', 'www.google.by', 'www.google.com.bz', 'www.google.ca', 'www.google.cd', 'www.google.cf', 'www.google.cg', 'www.google.ch', 'www.google.ci', 'www.google.co.ck', 'www.google.cl', 'www.google.cm', 'www.google.cn', 'www.google.com.co', 'www.google.co.cr', 'www.google.com.cu', 'www.google.cv', 'www.google.com.cy', 'www.google.cz', 'www.google.de', 'www.google.dj', 'www.google.dk', 'www.google.dm', 'www.google.com.do', 'www.google.dz', 'www.google.com.ec', 'www.google.ee', 'www.google.com.eg', 'www.google.es', 'www.google.com.et', 'www.google.fi', 'www.google.com.fj', 'www.google.fm', 'www.google.fr', 'www.google.ga', 'www.google.ge', 'www.google.gg', 'www.google.com.gh', 'www.google.com.gi', 'www.google.gl', 'www.google.gm', 'www.google.gr', 'www.google.com.gt', 'www.google.gy', 'www.google.com.hk', 'www.google.hn', 'www.google.hr', 'www.google.ht', 'www.google.hu', 'www.google.co.id', 'www.google.ie', 'www.google.co.il', 'www.google.im', 'www.google.co.in', 'www.google.iq', 'www.google.is', 'www.google.it', 'www.google.je', 'www.google.com.jm', 'www.google.jo', 'www.google.co.jp', 'www.google.co.ke', 'www.google.com.kh', 'www.google.ki', 'www.google.kg', 'www.google.co.kr', 'www.google.com.kw', 'www.google.kz', 'www.google.la', 'www.google.com.lb', 'www.google.li', 'www.google.lk', 'www.google.co.ls', 'www.google.lt', 'www.google.lu', 'www.google.lv', 'www.google.com.ly', 'www.google.co.ma', 'www.google.md', 'www.google.me', 'www.google.mg', 'www.google.mk', 'www.google.ml', 'www.google.com.mm', 'www.google.mn', 'www.google.ms', 'www.google.com.mt', 'www.google.mu', 'www.google.mv', 'www.google.mw', 'www.google.com.mx', 'www.google.com.my', 'www.google.co.mz', 'www.google.com.na', 'www.google.com.ng', 'www.google.com.ni', 'www.google.ne', 'www.google.nl', 'www.google.no', 'www.google.com.np', 'www.google.nr', 'www.google.nu', 'www.google.co.nz', 'www.google.com.om', 'www.google.com.pa', 'www.google.com.pe', 'www.google.com.pg', 'www.google.com.ph', 'www.google.com.pk', 'www.google.pl', 'www.google.pn', 'www.google.com.pr', 'www.google.ps', 'www.google.pt', 'www.google.com.py', 'www.google.com.qa', 'www.google.ro', 'www.google.ru', 'www.google.rw', 'www.google.com.sa', 'www.google.com.sb', 'www.google.sc', 'www.google.se', 'www.google.com.sg', 'www.google.sh', 'www.google.si', 'www.google.sk', 'www.google.com.sl', 'www.google.sn', 'www.google.so', 'www.google.sm', 'www.google.sr', 'www.google.st', 'www.google.com.sv', 'www.google.td', 'www.google.tg', 'www.google.co.th', 'www.google.com.tj', 'www.google.tl', 'www.google.tm', 'www.google.tn', 'www.google.to', 'www.google.com.tr', 'www.google.tt', 'www.google.com.tw', 'www.google.co.tz', 'www.google.com.ua', 'www.google.co.ug', 'www.google.co.uk', 'www.google.com.uy', 'www.google.co.uz', 'www.google.com.vc', 'www.google.co.ve', 'www.google.vg', 'www.google.co.vi', 'www.google.com.vn', 'www.google.vu', 'www.google.ws', 'www.google.rs', 'www.google.co.za', 'www.google.co.zm', 'www.google.co.zw', 'www.google.cat', 'www.bing.com', 'search.yahoo.com', 'uk.search.yahoo.com', 'de.search.yahoo.com', 'fr.search.yahoo.com', 'es.search.yahoo.com', 'search.aol.co.uk', 'search.aol.com', 'duckduckgo.com', 'www.baidu.com', 'yandex.ru', 'www.ecosia.org', 'search.lycos.com'];
-    }
-
-    /**
-     * Export data in CSV format.
-     *
-     * @param $request
      * @param $website
-     * @param $title
      * @param $range
-     * @param $name
-     * @param $count
-     * @param $results
-     * @return CSV\Writer
-     * @throws CSV\CannotInsertRecord
+     * @return array
      */
-    private function exportCSV($request, $website, $title, $range, $name, $count, $results)
+    private function getRevenueByBrowser($website, $range)
     {
-        if ($website->user->cannot('dataExport', ['App\Models\User'])) {
-            abort(403);
-        }
-
-        $content = CSV\Writer::createFromFileObject(new \SplTempFileObject);
-
-        // Generate the header
-        $content->insertOne([__('Website'), $website->domain]);
-        $content->insertOne([__('Type'), $title]);
-        $content->insertOne([__('Interval'), $range['from'] . ' - ' . $range['to']]);
-        $content->insertOne([__('Date'), Carbon::now()->format(__('Y-m-d')) . ' ' . Carbon::now()->format('H:i:s') . ' (' . CarbonTimeZone::create(config('app.timezone'))->toOffsetName() . ')']);
-        $content->insertOne([__('URL'), $request->fullUrl()]);
-        $content->insertOne([__(' ')]);
-
-        // Generate the summary
-        $content->insertOne([__('Visitors'), Stat::where([['website_id', '=', $website->id], ['name', '=', 'visitors']])
+        // Get all revenues in range
+        $revenueEvents = \App\Models\Revenue::where('website_id', '=', $website->id)
             ->whereBetween('date', [$range['from'], $range['to']])
-            ->sum('count')]);
-        $content->insertOne([__('Pageviews'), Stat::where([['website_id', '=', $website->id], ['name', '=', 'pageviews']])
-            ->whereBetween('date', [$range['from'], $range['to']])
-            ->sum('count')]);
-        $content->insertOne([__(' ')]);
-
-        // Generate the content
-        $content->insertOne([__($name), __($count)]);
-        foreach ($results as $result) {
-            $content->insertOne($result->toArray());
+            ->get();
+            
+        // Get browser stats
+        $browsers = $this->getBrowsers($website, $range, null, null, 'count', 'desc')
+            ->limit(5)
+            ->get();
+            
+        // Prepare result data structure
+        $result = [];
+        
+        foreach ($browsers as $browser) {
+            // Sum revenue for this browser
+            $browserRevenue = $revenueEvents->where('browser', $browser->value)->sum('amount');
+            
+            $result[] = [
+                'value' => $browser->value,
+                'visits' => $browser->count, 
+                'revenue' => $browserRevenue,
+                'revenuePerVisitor' => $browser->count > 0 ? $browserRevenue / $browser->count : 0
+            ];
         }
-
-        return response((string) $content, 200, [
-            'Content-Type' => 'text/csv',
-            'Content-Transfer-Encoding' => 'binary',
-            'Content-Disposition' => 'attachment; filename="' . formatTitle([$website->domain, $title, $range['from'], $range['to'], config('settings.title')]) . '.csv"'
-        ]);
+        
+        return $result;
+    }
+    
+    /**
+     * Get aggregated revenue by operating system
+     *
+     * @param $website
+     * @param $range
+     * @return array
+     */
+    private function getRevenueByOperatingSystem($website, $range)
+    {
+        // Get all revenues in range
+        $revenueEvents = \App\Models\Revenue::where('website_id', '=', $website->id)
+            ->whereBetween('date', [$range['from'], $range['to']])
+            ->get();
+            
+        // Get OS stats
+        $operatingSystems = $this->getOperatingSystems($website, $range, null, null, 'count', 'desc')
+            ->limit(5)
+            ->get();
+            
+        // Prepare result data structure
+        $result = [];
+        
+        foreach ($operatingSystems as $os) {
+            // Sum revenue for this OS
+            $osRevenue = $revenueEvents->where('os', $os->value)->sum('amount');
+            
+            $result[] = [
+                'value' => $os->value,
+                'visits' => $os->count, 
+                'revenue' => $osRevenue,
+                'revenuePerVisitor' => $os->count > 0 ? $osRevenue / $os->count : 0
+            ];
+        }
+        
+        return $result;
     }
 
     /**
@@ -2055,5 +2067,66 @@ class StatController extends Controller
         }
 
         return false;
+    }
+
+    /**
+     * Get traffic statistics (visitors or pageviews) by day
+     *
+     * @param $website
+     * @param $range
+     * @param $type
+     * @return array
+     */
+    private function getTraffic($website, $range, $type)
+    {
+        // Validate the traffic type
+        if (!in_array($type, ['visitors', 'pageviews'])) {
+            $type = 'visitors';
+        }
+
+        $data = Stat::selectRaw('`date`, SUM(`count`) as `count`')
+            ->where([['website_id', '=', $website->id], ['name', '=', $type]])
+            ->whereBetween('date', [$range['from'], $range['to']])
+            ->groupBy('date')
+            ->orderBy('date', 'asc')
+            ->get()
+            ->keyBy('date')
+            ->map(function ($item) {
+                return $item->count;
+            })
+            ->toArray();
+
+        $trafficMap = [];
+        
+        // If the unit is 'hour', format needs to be different
+        if ($range['unit'] == 'hour') {
+            // For hourly data, we need to create a map with all hours
+            $startDate = Carbon::createFromFormat('Y-m-d', $range['from'])->startOfDay();
+            $endDate = Carbon::createFromFormat('Y-m-d', $range['to'])->endOfDay();
+            
+            while ($startDate->lte($endDate)) {
+                $hour = $startDate->format('H');
+                $date = $startDate->format('Y-m-d');
+                
+                $key = $hour;
+                $trafficMap[$key] = isset($data[$date]) ? (int)$data[$date] : 0;
+                
+                $startDate->addHour();
+            }
+        } else {
+            // For daily, monthly, or yearly data
+            $format = $range['format'] ?: 'Y-m-d';
+            
+            // Initialize all dates in the range with 0 values
+            $trafficMap = $this->calcAllDates($range['from'], $range['to'], $range['unit'], $format, 0);
+            
+            // Fill in the actual data
+            foreach ($data as $date => $count) {
+                $key = Carbon::createFromFormat('Y-m-d', $date)->format($format);
+                $trafficMap[$key] = (int)$count;
+            }
+        }
+        
+        return $trafficMap;
     }
 }
