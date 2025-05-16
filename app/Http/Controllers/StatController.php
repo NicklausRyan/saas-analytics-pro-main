@@ -27,52 +27,7 @@ class StatController extends Controller
      * @param bool $includeRevenue
      * @return array|array[]
      */
-    private function getTraffic($website, $range, $type, $includeRevenue = false)
-    {
-        // Validate the traffic type
-        if (!in_array($type, ['visitors', 'pageviews'])) {
-            $type = 'visitors';
-        }
-
-        // Query and format traffic data from stats table
-        $data = Stat::selectRaw('`date`, SUM(`count`) as `count`')
-            ->where([['website_id', '=', $website->id], ['name', '=', $type]])
-            ->whereBetween('date', [$range['from'], $range['to']])
-            ->groupBy('date')
-            ->orderBy('date', 'asc')
-            ->get()
-            ->keyBy('date')
-            ->map(function ($item) {
-                return $item->count;
-            })
-            ->toArray();
-
-        // Format data for view
-        $trafficMap = [];
-        
-        $startDate = Carbon::createFromFormat('Y-m-d', $range['from']);
-        $endDate = Carbon::createFromFormat('Y-m-d', $range['to']);
-        
-        while($startDate->lte($endDate)) {
-            $date = $startDate->format('Y-m-d');
-            
-            $trafficMap[$date] = isset($data[$date]) ? (int)$data[$date] : 0;
-            
-            $startDate->addDay();
-        }
-        
-        if ($includeRevenue) {
-            // Get revenue data using existing method
-            $revenueMap = $this->getRevenueByDay($website, $range);
-            
-            return [
-                'traffic' => $trafficMap,
-                'revenue' => $revenueMap
-            ];
-        }
-        
-        return $trafficMap;
-    }
+    // Removed duplicate method - now using getWebsiteTraffic defined at the bottom of this file
 
     /**
      * Show the Overview stats page.
@@ -701,21 +656,19 @@ class StatController extends Controller
      * @param Request $request
      * @param $id
      * @return \Illuminate\Contracts\Foundation\Application|\Illuminate\Contracts\View\Factory|\Illuminate\View\View
-     */
-    public function countries(Request $request, $id)
+     */    public function countries(Request $request, $id)
     {
         $website = Website::where('domain', $id)->firstOrFail();
 
         if ($this->statsGuard($website)) {
             return view('stats.password', ['website' => $website]);
-        };
-
-        $range = $this->range();
-        $search = $request->input('search');
+        };        $range = $this->range();
+        $search = $request->input('search', ''); // Provide empty string default
         $searchBy = in_array($request->input('search_by'), ['value']) ? $request->input('search_by') : 'value';
         $sortBy = in_array($request->input('sort_by'), ['count', 'value']) ? $request->input('sort_by') : 'count';
         $sort = in_array($request->input('sort'), ['asc', 'desc']) ? $request->input('sort') : 'desc';
         $perPage = in_array($request->input('per_page'), [10, 25, 50, 100]) ? $request->input('per_page') : config('settings.paginate');
+        $metric = in_array($request->input('metric'), ['visitors', 'revenue']) ? $request->input('metric') : 'visitors';
 
         $total = Stat::selectRaw('SUM(`count`) as `count`')
             ->where([['website_id', '=', $website->id], ['name', '=', 'country']])
@@ -724,18 +677,56 @@ class StatController extends Controller
 
         $countriesChart = $this->getCountries($website, $range, $search, $searchBy, $sortBy, $sort)
             ->get();
-
+            
+        // Get revenue data as well
+        $revenueByCountry = $this->getRevenueByCountry($website, $range, null, $search, $searchBy, $sortBy, $sort);
+        
+        // Calculate total revenue
+        $totalRevenue = 0;
+        foreach ($revenueByCountry as $item) {
+            $totalRevenue += $item['revenue'];
+        }
+        
         $countries = $this->getCountries($website, $range, $search, $searchBy, $sortBy, $sort)
             ->paginate($perPage)
-            ->appends(['from' => $range['from'], 'to' => $range['to'], 'search' => $search, 'search_by' => $searchBy, 'sort_by' => $sortBy, 'sort' => $sort]);
+            ->appends([
+                'from' => $range['from'], 
+                'to' => $range['to'], 
+                'search' => $search, 
+                'search_by' => $searchBy, 
+                'sort_by' => $sortBy, 
+                'sort' => $sort,
+                'metric' => $metric
+            ]);
 
         $first = $this->getCountries($website, $range, $search, $searchBy, 'count', 'desc')
             ->first();
 
         $last = $this->getCountries($website, $range, $search, $searchBy, 'count', 'asc')
             ->first();
-
-        return view('stats.container', ['view' => 'countries', 'website' => $website, 'range' => $range, 'export' => 'stats.export.countries', 'countries' => $countries, 'countriesChart' => $countriesChart, 'first' => $first, 'last' => $last, 'total' => $total]);
+        
+        // Get the currency from revenue data
+        $primaryCurrency = \App\Models\Revenue::where('website_id', '=', $website->id)
+            ->orderBy('date', 'desc')
+            ->value('currency') ?? '';        return view('stats.container', [
+            'view' => 'countries', 
+            'website' => $website, 
+            'range' => $range, 
+            'export' => 'stats.export.countries', 
+            'countries' => $countries, 
+            'countriesChart' => $countriesChart, 
+            'revenueByCountry' => $revenueByCountry,
+            'first' => $first, 
+            'last' => $last, 
+            'total' => $total,
+            'totalRevenue' => $totalRevenue,
+            'metric' => $metric,
+            'primaryCurrency' => $primaryCurrency,
+            'search' => $search,
+            'searchBy' => $searchBy,
+            'sortBy' => $sortBy,
+            'sort' => $sort
+        ]);
     }
 
     /**
@@ -744,8 +735,7 @@ class StatController extends Controller
      * @param Request $request
      * @param $id
      * @return \Illuminate\Contracts\Foundation\Application|\Illuminate\Contracts\View\Factory|\Illuminate\View\View
-     */
-    public function cities(Request $request, $id)
+     */    public function cities(Request $request, $id)
     {
         $website = Website::where('domain', $id)->firstOrFail();
 
@@ -754,7 +744,7 @@ class StatController extends Controller
         };
 
         $range = $this->range();
-        $search = $request->input('search');
+        $search = $request->input('search', ''); // Provide empty string default
         $searchBy = in_array($request->input('search_by'), ['value']) ? $request->input('search_by') : 'value';
         $sortBy = in_array($request->input('sort_by'), ['count', 'value']) ? $request->input('sort_by') : 'count';
         $sort = in_array($request->input('sort'), ['asc', 'desc']) ? $request->input('sort') : 'desc';
@@ -1970,18 +1960,21 @@ class StatController extends Controller
      * @param $website
      * @param $range
      * @return array
-     */
-    private function getRevenueByCountry($website, $range)
+     */    private function getRevenueByCountry($website, $range, $limit = null, $search = null, $searchBy = null, $sortBy = null, $sort = null)
     {
         // Get all revenues in range
         $revenueEvents = \App\Models\Revenue::where('website_id', '=', $website->id)
             ->whereBetween('date', [$range['from'], $range['to']])
             ->get();
             
-        // Get countries stats
-        $countries = $this->getCountries($website, $range, null, null, 'count', 'desc')
-            ->limit(5)
-            ->get();
+        // Get countries stats with optional limit
+        $countriesQuery = $this->getCountries($website, $range, $search, $searchBy, $sortBy ?: 'count', $sort ?: 'desc');
+        
+        if ($limit) {
+            $countries = $countriesQuery->limit($limit)->get();
+        } else {
+            $countries = $countriesQuery->get();
+        }
             
         // Prepare result data structure
         $result = [];

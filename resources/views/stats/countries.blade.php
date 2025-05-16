@@ -99,6 +99,13 @@
                 <div class="col-12 col-md-auto">
                     <div class="form-row">
                         @include('stats.filters', ['name' => __('Name'), 'count' => __('Visitors')])
+                        
+                        <!-- Metric toggle -->                        <div class="col-auto">
+                            <div class="btn-group btn-group-sm" role="group">
+                                <a href="{{ route('stats.countries', ['id' => $website->domain, 'from' => $range['from'], 'to' => $range['to'], 'search' => $search ?? '', 'search_by' => $searchBy ?? 'value', 'sort_by' => $sortBy ?? 'count', 'sort' => $sort ?? 'desc', 'metric' => 'visitors']) }}" class="btn {{ $metric == 'visitors' ? 'btn-primary' : 'btn-outline-primary' }}">{{ __('Visitors') }}</a>
+                                <a href="{{ route('stats.countries', ['id' => $website->domain, 'from' => $range['from'], 'to' => $range['to'], 'search' => $search ?? '', 'search_by' => $searchBy ?? 'value', 'sort_by' => $sortBy ?? 'count', 'sort' => $sort ?? 'desc', 'metric' => 'revenue']) }}" class="btn {{ $metric == 'revenue' ? 'btn-primary' : 'btn-outline-primary' }}">{{ __('Revenue') }}</a>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -120,18 +127,39 @@
                                         name: '',
                                         format: '{0}'
                                     },
+                                    @if($metric == 'revenue')
+                                    revenue: {
+                                        name: '',
+                                        format: '{0} {{ $primaryCurrency }} <span class="text-lowercase">{{ __('Revenue') }}</span>',
+                                        thousandSeparator: '{{ __(',') }}'
+                                    }
+                                    @else
                                     clicks: {
                                         name: '',
                                         format: '{0} <span class="text-lowercase">{{ __('Clicks') }}</span>',
                                         thousandSeparator: '{{ __(',') }}'
                                     }
+                                    @endif
                                 },
+                                @if($metric == 'revenue')
+                                applyData: 'revenue',
+                                values: {
+                                    @foreach($revenueByCountry as $country)
+                                    @php
+                                        $countryCode = explode(':', $country['value'])[0] ?? '';
+                                        $countryName = explode(':', $country['value'])[1] ?? '';
+                                    @endphp
+                                    '{{ $countryCode }}': {revenue: {{ $country['revenue'] }}, country: '{{ $countryName }}'},
+                                    @endforeach
+                                }
+                                @else
                                 applyData: 'clicks',
                                 values: {
                                     @foreach($countriesChart as $country)
                                     '{{ (explode(':', $country->value)[0]) ?? '' }}': {clicks: {{ $country->count }}, country: '{{ (explode(':', $country->value)[1]) ?? '' }}'},
                                     @endforeach
                                 }
+                                @endif
                             },
                             colorMin: '#c5dbff',
                             colorMax: '#2f5ec4',
@@ -139,9 +167,7 @@
                             noDataText: '{{ __('No data') }}'
                         });
                     });
-                </script>
-
-                <div class="list-group list-group-flush mb-n3 mt-3">
+                </script>                <div class="list-group list-group-flush mb-n3 mt-3">
                     <div class="list-group-item px-0 text-muted">
                         <div class="row align-items-center">
                             <div class="col">
@@ -150,10 +176,16 @@
                             <div class="col-auto">
                                 {{ __('Visitors') }}
                             </div>
+                            @if($metric == 'revenue')
+                            <div class="col-auto">
+                                {{ __('Revenue') }}
+                            </div>
+                            <div class="col-auto">
+                                {{ __('Revenue/Visitor') }}
+                            </div>
+                            @endif
                         </div>
-                    </div>
-
-                    <div class="list-group-item px-0 small text-muted">
+                    </div>                    <div class="list-group-item px-0 small text-muted">
                         <div class="d-flex flex-column">
                             <div class="d-flex justify-content-between">
                                 <div class="d-flex text-truncate align-items-center">
@@ -168,12 +200,36 @@
                                     <div class="width-16 text-muted {{ (__('lang_dir') == 'rtl' ? 'mr-3' : 'ml-3') }}">
                                         {{ number_format((($total->count / $total->count) * 100), 1, __('.'), __(',')) }}%
                                     </div>
+                                    
+                                    @if($metric == 'revenue')
+                                    <div class="d-flex align-items-baseline {{ (__('lang_dir') == 'rtl' ? 'mr-3 text-left' : 'ml-3 text-right') }}">
+                                        <span>{{ number_format($totalRevenue, 2, __('.'), __(',')) }} {{ $primaryCurrency }}</span>
+                                    </div>
+                                    
+                                    <div class="d-flex align-items-baseline {{ (__('lang_dir') == 'rtl' ? 'mr-3 text-left' : 'ml-3 text-right') }}">
+                                        <span>{{ number_format(($totalRevenue / $total->count), 2, __('.'), __(',')) }} {{ $primaryCurrency }}</span>
+                                    </div>
+                                    @endif
                                 </div>
                             </div>
                         </div>
-                    </div>
-
-                    @foreach($countries as $country)
+                    </div>                    @foreach($countries as $country)
+                        @php
+                            $countryCode = explode(':', $country->value)[0] ?? '';
+                            $countryRevenue = 0;
+                            $countryRevenuePerVisitor = 0;
+                            
+                            if($metric == 'revenue') {
+                                // Find this country in the revenue data
+                                foreach($revenueByCountry as $revenueData) {
+                                    if($revenueData['value'] == $country->value) {
+                                        $countryRevenue = $revenueData['revenue'];
+                                        $countryRevenuePerVisitor = $revenueData['revenuePerVisitor'];
+                                        break;
+                                    }
+                                }
+                            }
+                        @endphp
                         <div class="list-group-item px-0 border-0">
                             <div class="d-flex flex-column">
                                 <div class="d-flex justify-content-between mb-2">
@@ -194,6 +250,16 @@
                                         <div class="width-16 text-muted {{ (__('lang_dir') == 'rtl' ? 'mr-3' : 'ml-3') }}">
                                             {{ number_format((($country->count / $total->count) * 100), 1, __('.'), __(',')) }}%
                                         </div>
+                                        
+                                        @if($metric == 'revenue')
+                                        <div class="d-flex align-items-baseline {{ (__('lang_dir') == 'rtl' ? 'mr-3 text-left' : 'ml-3 text-right') }}">
+                                            <span>{{ number_format($countryRevenue, 2, __('.'), __(',')) }} {{ $primaryCurrency }}</span>
+                                        </div>
+                                        
+                                        <div class="d-flex align-items-baseline {{ (__('lang_dir') == 'rtl' ? 'mr-3 text-left' : 'ml-3 text-right') }}">
+                                            <span>{{ number_format($countryRevenuePerVisitor, 2, __('.'), __(',')) }} {{ $primaryCurrency }}</span>
+                                        </div>
+                                        @endif
                                     </div>
                                 </div>
                                 <div class="progress height-1.25 w-100">

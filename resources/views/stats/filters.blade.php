@@ -20,6 +20,9 @@
 
                     <input name="from" type="hidden" value="{{ $range['from'] }}">
                     <input name="to" type="hidden" value="{{ $range['to'] }}">
+                    @if(isset($metric))
+                    <input name="metric" type="hidden" value="{{ $metric }}">
+                    @endif
 
                     <div class="max-height-96 overflow-auto pt-3">
                         <div class="form-group px-4">
