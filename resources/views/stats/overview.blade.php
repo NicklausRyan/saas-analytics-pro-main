@@ -232,19 +232,15 @@
                             '{{ $date }}',
                         @endif
                     @endforeach
-                ];
-
-                const lineOptions = {
+                ];                const lineOptions = {
                     pointRadius: 4,
                     pointHoverRadius: 6,
                     hitRadius: 5,
                     pointHoverBorderWidth: 3,
-                    lineTension: 0,
-                }
-
+                    lineTension: 0
+                }                
                 let trendChart = new Chart(ctx, {
-                    type: 'line',
-
+                    type: 'bar',
                     data: {
                         labels: [
                             @foreach($pageviewsMap as $date => $value)
@@ -260,6 +256,20 @@
                             @endforeach
                         ],
                         datasets: [{
+                            type: 'bar',
+                            label: '{{ __('Revenue') }}',
+                            data: [
+                                @foreach($revenueMap as $date => $value)
+                                    {{ $value }},
+                                @endforeach
+                            ],
+                            backgroundColor: revenueColor.replace('rgb', 'rgba').replace(')', ', 0.6)'),
+                            borderColor: revenueColor,
+                            borderWidth: 1,
+                            yAxisID: 'y1',
+                            order: 3
+                        }, {
+                            type: 'line',
                             label: '{{ __('Visitors') }}',
                             data: [
                                 @foreach($visitorsMap as $date => $value)
@@ -273,7 +283,10 @@
                             pointBackgroundColor: uniqueColor,
                             pointHoverBackgroundColor: phBgColor,
                             pointHoverBorderColor: uniqueColor,
-                            ...lineOptions                        }, {
+                            ...lineOptions,
+                            order: 1                      
+                        }, {
+                            type: 'line',
                             label: '{{ __('Pageviews') }}',
                             data: [
                                 @foreach($pageviewsMap as $date => $value)
@@ -287,28 +300,13 @@
                             pointBackgroundColor: pageViewsColor,
                             pointHoverBackgroundColor: phBgColor,
                             pointHoverBorderColor: pageViewsColor,
-                            ...lineOptions
-                        }, {
-                            label: '{{ __('Revenue') }}',
-                            data: [
-                                @foreach($revenueMap as $date => $value)
-                                    {{ $value }},
-                                @endforeach
-                            ],
-                            fill: true,
-                            backgroundColor: gradient3,
-                            borderColor: revenueColor,
-                            pointBorderColor: revenueColor,
-                            pointBackgroundColor: revenueColor,
-                            pointHoverBackgroundColor: phBgColor,
-                            pointHoverBorderColor: revenueColor,
                             ...lineOptions,
-                            yAxisID: 'y1'
+                            order: 2
                         }]
-                    },
-                    options: {
+                    },                    options: {
                         responsive: true,
-                        maintainAspectRatio: false,                        interaction: {
+                        maintainAspectRatio: false,
+                        interaction: {
                             mode: 'index',
                             intersect: false
                         },
@@ -335,6 +333,15 @@
                                     callback: function (value) {
                                         return formatNumber(value) + ' {{ $primaryCurrency }}';
                                     }
+                                },
+                                beginAtZero: true
+                            },
+                            x: {
+                                offset: true,
+                                grid: {
+                                    display: true,
+                                    drawBorder: false,
+                                    drawOnChartArea: false
                                 }
                             }
                         },

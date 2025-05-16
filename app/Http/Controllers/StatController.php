@@ -19,6 +19,62 @@ class StatController extends Controller
     use DateRangeTrait;
 
     /**
+     * Get traffic data and optionally include revenue data
+     * 
+     * @param \App\Models\Website $website
+     * @param array $range
+     * @param string $type
+     * @param bool $includeRevenue
+     * @return array|array[]
+     */
+    private function getTraffic($website, $range, $type, $includeRevenue = false)
+    {
+        // Validate the traffic type
+        if (!in_array($type, ['visitors', 'pageviews'])) {
+            $type = 'visitors';
+        }
+
+        // Query and format traffic data from stats table
+        $data = Stat::selectRaw('`date`, SUM(`count`) as `count`')
+            ->where([['website_id', '=', $website->id], ['name', '=', $type]])
+            ->whereBetween('date', [$range['from'], $range['to']])
+            ->groupBy('date')
+            ->orderBy('date', 'asc')
+            ->get()
+            ->keyBy('date')
+            ->map(function ($item) {
+                return $item->count;
+            })
+            ->toArray();
+
+        // Format data for view
+        $trafficMap = [];
+        
+        $startDate = Carbon::createFromFormat('Y-m-d', $range['from']);
+        $endDate = Carbon::createFromFormat('Y-m-d', $range['to']);
+        
+        while($startDate->lte($endDate)) {
+            $date = $startDate->format('Y-m-d');
+            
+            $trafficMap[$date] = isset($data[$date]) ? (int)$data[$date] : 0;
+            
+            $startDate->addDay();
+        }
+        
+        if ($includeRevenue) {
+            // Get revenue data using existing method
+            $revenueMap = $this->getRevenueByDay($website, $range);
+            
+            return [
+                'traffic' => $trafficMap,
+                'revenue' => $revenueMap
+            ];
+        }
+        
+        return $trafficMap;
+    }
+
+    /**
      * Show the Overview stats page.
      *
      * @param Request $request
@@ -31,12 +87,13 @@ class StatController extends Controller
 
         if ($this->statsGuard($website)) {
             return view('stats.password', ['website' => $website]);
-        }
-
-        $range = $this->range();
-
-        $visitorsMap = $this->getTraffic($website, $range, 'visitors');
-        $pageviewsMap = $this->getTraffic($website, $range, 'pageviews');
+        }        $range = $this->range();        // Get visitors data with revenue
+        $visitorsData = $this->getWebsiteTraffic($website, $range, 'visitors', true);
+        $visitorsMap = $visitorsData['traffic'];
+        $revenueMap = $visitorsData['revenue'];
+        
+        // Get pageviews data
+        $pageviewsMap = $this->getWebsiteTraffic($website, $range, 'pageviews');
 
         $totalVisitors = $totalPageviews = 0;
         foreach ($visitorsMap as $key => $value) {
@@ -1275,6 +1332,7 @@ class StatController extends Controller
         $website = Website::where('domain', $id)->firstOrFail();
 
         if ($this->statsGuard($website)) {
+           
             return view('stats.password', ['website' => $website]);
         };
 
@@ -2037,8 +2095,7 @@ class StatController extends Controller
      *
      * @param $website
      * @return bool
-     */
-    private function statsGuard($website)
+     */    private function statsGuard($website)
     {
         // If the link stats is not set to public
         if($website->privacy !== 0) {
@@ -2068,16 +2125,17 @@ class StatController extends Controller
 
         return false;
     }
-
+    
     /**
-     * Get traffic statistics (visitors or pageviews) by day
+     * Get traffic data for a website in a specified date range.
      *
-     * @param $website
-     * @param $range
-     * @param $type
-     * @return array
+     * @param Website $website
+     * @param array $range
+     * @param string $type
+     * @param bool $includeRevenue
+     * @return array|mixed
      */
-    private function getTraffic($website, $range, $type)
+    private function getWebsiteTraffic($website, $range, $type, $includeRevenue = false)
     {
         // Validate the traffic type
         if (!in_array($type, ['visitors', 'pageviews'])) {
@@ -2097,19 +2155,43 @@ class StatController extends Controller
             ->toArray();
 
         $trafficMap = [];
+        $revenueMap = [];
         
         // If the unit is 'hour', format needs to be different
         if ($range['unit'] == 'hour') {
             // For hourly data, we need to create a map with all hours
             $startDate = Carbon::createFromFormat('Y-m-d', $range['from'])->startOfDay();
             $endDate = Carbon::createFromFormat('Y-m-d', $range['to'])->endOfDay();
+              // If revenue data is requested, get the hourly revenue data
+            $revenueData = [];
+            if ($includeRevenue) {
+                $revenueData = \App\Models\Revenue::selectRaw("DATE_FORMAT(created_at, '%H') as hour, DATE(created_at) as date, created_at, SUM(amount) as total")
+                    ->where('website_id', '=', $website->id)
+                    ->whereBetween('date', [$range['from'], $range['to']])
+                    ->groupBy('hour', 'date', 'created_at')
+                    ->orderBy('date', 'asc')
+                    ->orderBy('hour', 'asc')
+                    ->get()
+                    ->mapToGroups(function ($item) {
+                        return [$item->date . ' ' . $item->hour => $item->total];
+                    })
+                    ->map(function ($group) {
+                        return $group->sum();
+                    })
+                    ->toArray();
+            }
             
             while ($startDate->lte($endDate)) {
                 $hour = $startDate->format('H');
                 $date = $startDate->format('Y-m-d');
+                $dateHour = $date . ' ' . $hour;
                 
                 $key = $hour;
                 $trafficMap[$key] = isset($data[$date]) ? (int)$data[$date] : 0;
+                
+                if ($includeRevenue) {
+                    $revenueMap[$key] = isset($revenueData[$dateHour]) ? (float)$revenueData[$dateHour] : 0;
+                }
                 
                 $startDate->addHour();
             }
@@ -2120,11 +2202,43 @@ class StatController extends Controller
             // Initialize all dates in the range with 0 values
             $trafficMap = $this->calcAllDates($range['from'], $range['to'], $range['unit'], $format, 0);
             
-            // Fill in the actual data
+            // Fill in the actual traffic data
             foreach ($data as $date => $count) {
                 $key = Carbon::createFromFormat('Y-m-d', $date)->format($format);
                 $trafficMap[$key] = (int)$count;
             }
+            
+            // If revenue data is requested, get and format the revenue data
+            if ($includeRevenue) {
+                // Get revenue data
+                $revenueData = \App\Models\Revenue::selectRaw('date, SUM(amount) as total')
+                    ->where('website_id', '=', $website->id)
+                    ->whereBetween('date', [$range['from'], $range['to']])
+                    ->groupBy('date')
+                    ->orderBy('date', 'asc')
+                    ->get()
+                    ->keyBy('date')
+                    ->map(function ($item) {
+                        return $item->total;
+                    })
+                    ->toArray();
+                
+                // Initialize revenue map with zeros
+                $revenueMap = $this->calcAllDates($range['from'], $range['to'], $range['unit'], $format, 0);
+                
+                // Fill in the actual revenue data
+                foreach ($revenueData as $date => $amount) {
+                    $key = Carbon::createFromFormat('Y-m-d', $date)->format($format);
+                    $revenueMap[$key] = (float)$amount;
+                }
+            }
+        }
+        
+        if ($includeRevenue) {
+            return [
+                'traffic' => $trafficMap,
+                'revenue' => $revenueMap
+            ];
         }
         
         return $trafficMap;
