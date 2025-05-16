@@ -84,11 +84,9 @@
                             </div>
                         </div>
                     </div>
-                </div>
-
-                <div class="row border-top">
+                </div>                <div class="row border-top">
                     <!-- Pageviews -->
-                    <div class="col-12 col-md-6 border-bottom border-bottom-md-0 {{ (__('lang_dir') == 'rtl' ? 'border-left-md' : 'border-right-md')  }}">
+                    <div class="col-12 col-md-4 border-bottom border-bottom-md-0 {{ (__('lang_dir') == 'rtl' ? 'border-left-md' : 'border-right-md')  }}">
                         <div class="px-2 py-4">
                             <div class="d-flex">
                                 <div class="text-truncate {{ (__('lang_dir') == 'rtl' ? 'ml-2' : 'mr-2') }}">
@@ -112,11 +110,73 @@
                             </div>
                         </div>
                     </div>
-
-                    <!-- Space for future metrics -->
-                    <div class="col-12 col-md-6">
+                    
+                    <!-- Total Revenue -->
+                    <div class="col-12 col-md-4 border-bottom border-bottom-md-0 {{ (__('lang_dir') == 'rtl' ? 'border-left-md' : 'border-right-md')  }}">
                         <div class="px-2 py-4">
-                            
+                            <div class="d-flex">
+                                <div class="text-truncate {{ (__('lang_dir') == 'rtl' ? 'ml-2' : 'mr-2') }}">
+                                    <div class="d-flex align-items-center text-truncate">
+                                        <div class="d-flex align-items-center justify-content-center bg-success rounded width-4 height-4 flex-shrink-0 {{ (__('lang_dir') == 'rtl' ? 'ml-2' : 'mr-2') }}" id="revenue-legend"></div>
+
+                                        <div class="flex-grow-1 d-flex font-weight-bold text-truncate">
+                                            <div class="text-truncate">{{ __('Total Revenue') }}</div>
+                                            <div class="flex-shrink-0 d-flex align-items-center mx-2" data-tooltip="true" title="{{ __('The total revenue generated during the selected period.') }}">
+                                                @include('icons.info', ['class' => 'width-4 height-4 fill-current text-muted'])
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    @include('stats.growth', ['growthCurrent' => $totalRevenue, 'growthPrevious' => $totalRevenueOld])
+                                </div>
+
+                                <div class="d-flex align-items-center {{ (__('lang_dir') == 'rtl' ? 'mr-auto' : 'ml-auto') }}">
+                                    <div class="h2 font-weight-bold mb-0">{{ number_format($totalRevenue, 2, __('.'), __(',')) }} {{ $primaryCurrency }}</div>
+                                </div>
+                            </div>
+                        </div>                    </div>                    <!-- Revenue per visitor -->
+                    <div class="col-12 col-md-4">
+                        <div class="px-2 py-4">
+                            <div class="d-flex">
+                                <div class="text-truncate {{ (__('lang_dir') == 'rtl' ? 'ml-2' : 'mr-2') }}">
+                                    <div class="d-flex align-items-center text-truncate">
+                                        <div class="d-flex align-items-center justify-content-center bg-warning rounded width-4 height-4 flex-shrink-0 {{ (__('lang_dir') == 'rtl' ? 'ml-2' : 'mr-2') }}" id="revenue-per-visitor-legend"></div>
+
+                                        <div class="flex-grow-1 d-flex font-weight-bold text-truncate">
+                                            <div class="text-truncate">{{ __('Revenue / Visitor') }}</div>
+                                            <div class="flex-shrink-0 d-flex align-items-center mx-2" data-tooltip="true" title="{{ __('The average revenue generated per unique visitor.') }}">
+                                                @include('icons.info', ['class' => 'width-4 height-4 fill-current text-muted'])
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>                                <div class="d-flex align-items-center {{ (__('lang_dir') == 'rtl' ? 'mr-auto' : 'ml-auto') }}">
+                                    <div class="h2 font-weight-bold mb-0">{{ number_format($revenuePerVisitor, 2, __('.'), __(',')) }} {{ $primaryCurrency }}</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>                </div>
+                <div class="row border-top">
+                    <!-- Conversion Rate -->
+                    <div class="col-12">
+                        <div class="px-2 py-4">
+                            <div class="d-flex">
+                                <div class="text-truncate {{ (__('lang_dir') == 'rtl' ? 'ml-2' : 'mr-2') }}">
+                                    <div class="d-flex align-items-center text-truncate">
+                                        <div class="d-flex align-items-center justify-content-center bg-info rounded width-4 height-4 flex-shrink-0 {{ (__('lang_dir') == 'rtl' ? 'ml-2' : 'mr-2') }}" id="conversion-rate-legend"></div>
+
+                                        <div class="flex-grow-1 d-flex font-weight-bold text-truncate">
+                                            <div class="text-truncate">{{ __('Conversion Rate') }}</div>
+                                            <div class="flex-shrink-0 d-flex align-items-center mx-2" data-tooltip="true" title="{{ __('The percentage of sessions that resulted in a revenue event.') }}">
+                                                @include('icons.info', ['class' => 'width-4 height-4 fill-current text-muted'])
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="d-flex align-items-center {{ (__('lang_dir') == 'rtl' ? 'mr-auto' : 'ml-auto') }}">
+                                    <div class="h2 font-weight-bold mb-0">{{ number_format($conversionRate * 100, 1, __('.'), __(',')) }}%</div>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -131,16 +191,23 @@
             'use strict';
 
             window.addEventListener("DOMContentLoaded", function () {
+                // Helper function to format numbers with abbreviations for large values
+                function formatNumber(num) {
+                    if (num >= 1000000) {
+                        return (num / 1000000).toFixed(1) + 'M';
+                    } else if (num >= 1000) {
+                        return (num / 1000).toFixed(1) + 'K';
+                    }
+                    return num.toFixed(0);
+                }
                 Chart.defaults.font = {
                     family: "Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, 'Noto Sans', sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji'",
                     size: 12
-                };                const phBgColor = window.getComputedStyle(document.getElementById('trend-chart-container')).getPropertyValue('background-color');
-                const uniqueColor = window.getComputedStyle(document.getElementById('visitors-legend')).getPropertyValue('background-color');
+                };                const phBgColor = window.getComputedStyle(document.getElementById('trend-chart-container')).getPropertyValue('background-color');                const uniqueColor = window.getComputedStyle(document.getElementById('visitors-legend')).getPropertyValue('background-color');
                 const pageViewsColor = window.getComputedStyle(document.getElementById('pageviews-legend')).getPropertyValue('background-color');
                 const bounceRateColor = window.getComputedStyle(document.getElementById('bounce-rate-legend')).getPropertyValue('background-color');
                 const sessionDurationColor = window.getComputedStyle(document.getElementById('session-duration-legend')).getPropertyValue('background-color');
-
-                const ctx = document.querySelector('#trend-chart').getContext('2d');
+                const revenueColor = window.getComputedStyle(document.getElementById('revenue-legend')).getPropertyValue('background-color');                const ctx = document.querySelector('#trend-chart').getContext('2d');
                 const gradient1 = ctx.createLinearGradient(0, 0, 0, 300);
                 gradient1.addColorStop(0, uniqueColor.replace('rgb', 'rgba').replace(')', ', 0.35)'));
                 gradient1.addColorStop(1, uniqueColor.replace('rgb', 'rgba').replace(')', ', 0.01)'));
@@ -148,6 +215,10 @@
                 const gradient2 = ctx.createLinearGradient(0, 0, 0, 300);
                 gradient2.addColorStop(0, pageViewsColor.replace('rgb', 'rgba').replace(')', ', 0.35)'));
                 gradient2.addColorStop(1, pageViewsColor.replace('rgb', 'rgba').replace(')', ', 0.01)'));
+                
+                const gradient3 = ctx.createLinearGradient(0, 0, 0, 300);
+                gradient3.addColorStop(0, revenueColor.replace('rgb', 'rgba').replace(')', ', 0.35)'));
+                gradient3.addColorStop(1, revenueColor.replace('rgb', 'rgba').replace(')', ', 0.01)'));
 
                 let tooltipTitles = [
                     @foreach($visitorsMap as $date => $value)
@@ -202,8 +273,7 @@
                             pointBackgroundColor: uniqueColor,
                             pointHoverBackgroundColor: phBgColor,
                             pointHoverBorderColor: uniqueColor,
-                            ...lineOptions
-                        }, {
+                            ...lineOptions                        }, {
                             label: '{{ __('Pageviews') }}',
                             data: [
                                 @foreach($pageviewsMap as $date => $value)
@@ -218,14 +288,55 @@
                             pointHoverBackgroundColor: phBgColor,
                             pointHoverBorderColor: pageViewsColor,
                             ...lineOptions
+                        }, {
+                            label: '{{ __('Revenue') }}',
+                            data: [
+                                @foreach($revenueMap as $date => $value)
+                                    {{ $value }},
+                                @endforeach
+                            ],
+                            fill: true,
+                            backgroundColor: gradient3,
+                            borderColor: revenueColor,
+                            pointBorderColor: revenueColor,
+                            pointBackgroundColor: revenueColor,
+                            pointHoverBackgroundColor: phBgColor,
+                            pointHoverBorderColor: revenueColor,
+                            ...lineOptions,
+                            yAxisID: 'y1'
                         }]
                     },
                     options: {
                         responsive: true,
-                        maintainAspectRatio: false,
-                        interaction: {
+                        maintainAspectRatio: false,                        interaction: {
                             mode: 'index',
                             intersect: false
+                        },
+                        scales: {
+                            y: {
+                                position: 'left',
+                                grid: {
+                                    borderDash: [2, 2],
+                                    drawBorder: false
+                                },
+                                ticks: {
+                                    callback: function (value) {
+                                        return formatNumber(value);
+                                    }
+                                }
+                            },
+                            y1: {
+                                position: 'right',
+                                grid: {
+                                    display: false,
+                                    drawBorder: false
+                                },
+                                ticks: {
+                                    callback: function (value) {
+                                        return formatNumber(value) + ' {{ $primaryCurrency }}';
+                                    }
+                                }
+                            }
                         },
                         plugins: {
                             legend: {
@@ -269,10 +380,12 @@
                                 cornerRadius: 4,
                                 caretSize: 7,
 
-                                boxPadding: 4,
-
-                                callbacks: {
+                                boxPadding: 4,                                callbacks: {
                                     label: function (tooltipItem) {
+                                        // Format revenue values with currency symbol
+                                        if (tooltipItem.dataset.label === '{{ __('Revenue') }}') {
+                                            return ' ' + tooltipItem.dataset.label + ': ' + parseFloat(tooltipItem.dataset.data[tooltipItem.dataIndex]).format(2, 3, '{{ __(',') }}').toString() + ' {{ $primaryCurrency }}';
+                                        }
                                         return ' ' + tooltipItem.dataset.label + ': ' + parseFloat(tooltipItem.dataset.data[tooltipItem.dataIndex]).format(0, 3, '{{ __(',') }}').toString();
                                     },
                                     title: function (tooltipItem) {
@@ -318,19 +431,21 @@
                 const observer = (new MutationObserver(function (mutationsList, observer) {
                     for (const mutation of mutationsList) {
                         if (mutation.type === 'attributes' && mutation.attributeName === 'class') {
-                            setTimeout(function () {                                const phBgColor = window.getComputedStyle(document.getElementById('trend-chart-container')).getPropertyValue('background-color');
-                                const visitorsColor = window.getComputedStyle(document.getElementById('visitors-legend')).getPropertyValue('background-color');
+                            setTimeout(function () {                                const phBgColor = window.getComputedStyle(document.getElementById('trend-chart-container')).getPropertyValue('background-color');                                const visitorsColor = window.getComputedStyle(document.getElementById('visitors-legend')).getPropertyValue('background-color');
                                 const pageViewsColor = window.getComputedStyle(document.getElementById('pageviews-legend')).getPropertyValue('background-color');
                                 const bounceRateColor = window.getComputedStyle(document.getElementById('bounce-rate-legend')).getPropertyValue('background-color');
                                 const sessionDurationColor = window.getComputedStyle(document.getElementById('session-duration-legend')).getPropertyValue('background-color');
-
-                                const gradient1 = ctx.createLinearGradient(0, 0, 0, 300);
+                                const revenueColor = window.getComputedStyle(document.getElementById('revenue-legend')).getPropertyValue('background-color');                                const gradient1 = ctx.createLinearGradient(0, 0, 0, 300);
                                 gradient1.addColorStop(0, visitorsColor.replace('rgb', 'rgba').replace(')', ', 0.35)'));
                                 gradient1.addColorStop(1, visitorsColor.replace('rgb', 'rgba').replace(')', ', 0.01)'));
 
                                 const gradient2 = ctx.createLinearGradient(0, 0, 0, 300);
                                 gradient2.addColorStop(0, pageViewsColor.replace('rgb', 'rgba').replace(')', ', 0.35)'));
                                 gradient2.addColorStop(1, pageViewsColor.replace('rgb', 'rgba').replace(')', ', 0.01)'));
+                                
+                                const gradient3 = ctx.createLinearGradient(0, 0, 0, 300);
+                                gradient3.addColorStop(0, revenueColor.replace('rgb', 'rgba').replace(')', ', 0.35)'));
+                                gradient3.addColorStop(1, revenueColor.replace('rgb', 'rgba').replace(')', ', 0.01)'));
 
                                 trendChart.data.datasets[0].backgroundColor = gradient1;
                                 trendChart.data.datasets[0].borderColor = visitorsColor;
@@ -342,9 +457,15 @@
                                 trendChart.data.datasets[1].backgroundColor = gradient2;
                                 trendChart.data.datasets[1].borderColor = pageViewsColor;
                                 trendChart.data.datasets[1].pointBorderColor = pageViewsColor;
-                                trendChart.data.datasets[1].pointBackgroundColor = pageViewsColor;
-                                trendChart.data.datasets[1].pointHoverBackgroundColor = phBgColor;
+                                trendChart.data.datasets[1].pointBackgroundColor = pageViewsColor;                                trendChart.data.datasets[1].pointHoverBackgroundColor = phBgColor;
                                 trendChart.data.datasets[1].pointHoverBorderColor = pageViewsColor;
+                                
+                                trendChart.data.datasets[2].backgroundColor = gradient3;
+                                trendChart.data.datasets[2].borderColor = revenueColor;
+                                trendChart.data.datasets[2].pointBorderColor = revenueColor;
+                                trendChart.data.datasets[2].pointBackgroundColor = revenueColor;
+                                trendChart.data.datasets[2].pointHoverBackgroundColor = phBgColor;
+                                trendChart.data.datasets[2].pointHoverBorderColor = revenueColor;
 
                                 trendChart.options.plugins.tooltip.backgroundColor = (document.querySelector('html').classList.contains('dark') == 0 ? '#000' : '#FFF');
                                 trendChart.options.plugins.tooltip.titleColor = (document.querySelector('html').classList.contains('dark') == 0 ? '#FFF' : '#000');

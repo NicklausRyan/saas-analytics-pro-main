@@ -94,6 +94,29 @@ To view your revenue data:
 3. Click on "Revenue" in the navigation menu
 4. Use the date range selector to view revenue for specific periods
 
+## Understanding the Revenue Dashboard
+
+The Revenue Dashboard provides comprehensive analytics about your sales performance:
+
+### Revenue Overview
+
+- **Total Revenue**: Shows total revenue for the selected period with growth rate compared to previous period
+- **All Time Revenue**: Displays total revenue since tracking began
+- **Month to Date Revenue**: Shows revenue for the current month
+- **Average Order Value**: Displays the average value per transaction
+
+### Revenue Analytics
+
+- **Revenue Comparison**: Visual comparison between current and previous periods with growth rate
+- **Revenue Sources**: Breakdown of revenue by source with percentage contribution
+- **Key Metrics**: Quick overview of order count, average order value, and daily average
+- **Best Performing Day**: Highlights your highest revenue day within the selected period
+- **All-time Performance**: Shows your lifetime revenue totals and month-to-date figures
+
+### Revenue Trend
+
+The Revenue Trend chart visualizes your daily revenue over the selected period, allowing you to identify patterns and trends in your sales data.
+
 ## Troubleshooting
 
 - **No revenue data showing up?** Make sure your Stripe API key is correct and the webhook is properly configured.

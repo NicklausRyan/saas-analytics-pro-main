@@ -8,6 +8,13 @@ use Illuminate\Database\Eloquent\Builder;
 class Revenue extends Model
 {
     /**
+     * The table associated with the model.
+     *
+     * @var string
+     */
+    protected $table = 'revenue';
+    
+    /**
      * The attributes that are mass assignable.
      *
      * @var array

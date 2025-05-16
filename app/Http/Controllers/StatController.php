@@ -96,12 +96,58 @@ class StatController extends Controller
             
         $sessionCount = Stat::where([['website_id', '=', $website->id], ['name', '=', 'session']])
             ->whereBetween('date', [$range['from'], $range['to']])
-            ->sum('count');
-            
-        // Safe calculation to avoid division by zero
+            ->sum('count');        // Safe calculation to avoid division by zero
         $avgSessionDuration = $sessionCount > 0 ? (int)($sessionDurationSum / $sessionCount) : 0;
-
-        return view('stats.container', ['view' => 'overview', 'website' => $website, 'range' => $range, 'referrers' => $referrers, 'pages' => $pages, 'visitorsMap' => $visitorsMap, 'pageviewsMap' => $pageviewsMap, 'countries' => $countries, 'browsers' => $browsers, 'operatingSystems' => $operatingSystems, 'events' => $events, 'totalVisitors' => $totalVisitors, 'totalPageviews' => $totalPageviews, 'totalVisitorsOld' => $totalVisitorsOld, 'totalPageviewsOld' => $totalPageviewsOld, 'totalReferrers' => $totalReferrers, 'bounceRate' => $bounceRate, 'avgSessionDuration' => $avgSessionDuration]);
+        
+        // Get revenue data for the dashboard
+        $totalRevenue = \App\Models\Revenue::where('website_id', '=', $website->id)
+            ->whereBetween('date', [$range['from'], $range['to']])
+            ->sum('amount');
+            
+        $totalRevenueOld = \App\Models\Revenue::where('website_id', '=', $website->id)
+            ->whereBetween('date', [$range['from_old'], $range['to_old']])
+            ->sum('amount');
+            
+        $primaryCurrency = \App\Models\Revenue::where('website_id', '=', $website->id)
+            ->orderBy('date', 'desc')
+            ->value('currency') ?? '';
+              // Get revenue data by day for the chart
+        $revenueMap = $this->getRevenueByDay($website, $range);
+          // Calculate revenue per visitor
+        $revenuePerVisitor = $totalVisitors > 0 ? $totalRevenue / $totalVisitors : 0;
+        
+        // Calculate conversion rate (revenue events / total sessions)
+        $revenueEventsCount = \App\Models\Revenue::where('website_id', '=', $website->id)
+            ->whereBetween('date', [$range['from'], $range['to']])
+            ->count();
+        
+        $conversionRate = $sessionCount > 0 ? $revenueEventsCount / $sessionCount : 0;
+        
+        return view('stats.container', [
+            'view' => 'overview', 
+            'website' => $website, 
+            'range' => $range, 
+            'referrers' => $referrers, 
+            'pages' => $pages, 
+            'visitorsMap' => $visitorsMap, 
+            'pageviewsMap' => $pageviewsMap, 
+            'countries' => $countries, 
+            'browsers' => $browsers, 
+            'operatingSystems' => $operatingSystems, 
+            'events' => $events, 
+            'totalVisitors' => $totalVisitors, 
+            'totalPageviews' => $totalPageviews, 
+            'totalVisitorsOld' => $totalVisitorsOld, 
+            'totalPageviewsOld' => $totalPageviewsOld, 
+            'totalReferrers' => $totalReferrers, 
+            'bounceRate' => $bounceRate, 
+            'avgSessionDuration' => $avgSessionDuration,
+            'totalRevenue' => $totalRevenue,            'totalRevenueOld' => $totalRevenueOld,
+            'primaryCurrency' => $primaryCurrency,
+            'revenueMap' => $revenueMap,
+            'revenuePerVisitor' => $revenuePerVisitor,
+            'conversionRate' => $conversionRate
+        ]);
     }
 
     /**
@@ -331,8 +377,7 @@ class StatController extends Controller
      * @param Request $request
      * @param $id
      * @return \Illuminate\Contracts\Foundation\Application|\Illuminate\Contracts\View\Factory|\Illuminate\View\View
-     */
-    public function revenue(Request $request, $id)
+     */    public function revenue(Request $request, $id)
     {
         $website = Website::where('domain', $id)->firstOrFail();
 
@@ -355,6 +400,9 @@ class StatController extends Controller
         // Calculate total revenue
         $totalRevenue = $this->getRevenue($website, $range)->sum('amount');
         
+        // Calculate additional revenue metrics
+        $revenueSummary = $this->getRevenueSummary($website, $range);
+        
         // Get revenue by day (for chart)
         $revenueByDay = $this->getRevenueByDay($website, $range);
         
@@ -365,6 +413,7 @@ class StatController extends Controller
             'export' => 'stats.export.revenue',
             'revenue' => $revenue,
             'totalRevenue' => $totalRevenue,
+            'revenueSummary' => $revenueSummary,
             'revenueByDay' => $revenueByDay
         ]);
     }
@@ -1005,9 +1054,7 @@ class StatController extends Controller
 
         foreach ($revenue as $row) {
             $csv->insertOne([$row->date, $row->amount, $row->currency, $row->order_id]);
-        }
-
-        return response($csv->getContent())
+        }        return response($csv->getContent())
             ->withHeaders([
                 'Content-Type' => 'text/csv',
                 'Content-Transfer-Encoding' => 'binary',
@@ -1446,7 +1493,87 @@ class StatController extends Controller
             
         return $query;
     }
-    
+      /**
+     * Get summary statistics for revenue
+     *
+     * @param $website
+     * @param $range
+     * @return array
+     */
+    private function getRevenueSummary($website, $range)
+    {
+        // Get all revenue data in range
+        $revenueData = \App\Models\Revenue::where('website_id', '=', $website->id)
+            ->whereBetween('date', [$range['from'], $range['to']])
+            ->get();
+            
+        // Calculate average order value
+        $totalOrders = $revenueData->count();
+        $totalAmount = $revenueData->sum('amount');
+        $averageOrderValue = $totalOrders > 0 ? $totalAmount / $totalOrders : 0;
+        
+        // Get revenue by source
+        $revenueBySource = \App\Models\Revenue::selectRaw('source, SUM(amount) as total')
+            ->where('website_id', '=', $website->id)
+            ->whereBetween('date', [$range['from'], $range['to']])
+            ->groupBy('source')
+            ->get()
+            ->mapWithKeys(function ($item) {
+                return [$item->source => $item->total];
+            })
+            ->toArray();
+        
+        // Get max daily revenue
+        $maxDailyRevenue = \App\Models\Revenue::selectRaw('date, SUM(amount) as total')
+            ->where('website_id', '=', $website->id)
+            ->whereBetween('date', [$range['from'], $range['to']])
+            ->groupBy('date')
+            ->orderBy('total', 'desc')
+            ->first();
+            
+        // Calculate per day average
+        $days = Carbon::createFromFormat('Y-m-d', $range['from'])->diffInDays(Carbon::createFromFormat('Y-m-d', $range['to'])) + 1;
+        $averagePerDay = $days > 0 ? $totalAmount / $days : 0;
+        
+        // Get all-time revenue for a broader perspective
+        $allTimeRevenue = \App\Models\Revenue::where('website_id', '=', $website->id)
+            ->sum('amount');
+            
+        // Get month-to-date revenue
+        $currentMonth = Carbon::now()->format('Y-m');
+        $monthToDateRevenue = \App\Models\Revenue::where('website_id', '=', $website->id)
+            ->whereRaw("DATE_FORMAT(date, '%Y-%m') = ?", [$currentMonth])
+            ->sum('amount');
+            
+        // Calculate growth rate by comparing to previous period
+        $previousFrom = Carbon::createFromFormat('Y-m-d', $range['from'])->subDays($days);
+        $previousTo = Carbon::createFromFormat('Y-m-d', $range['from'])->subDay();
+        
+        $previousPeriodRevenue = \App\Models\Revenue::where('website_id', '=', $website->id)
+            ->whereBetween('date', [$previousFrom->format('Y-m-d'), $previousTo->format('Y-m-d')])
+            ->sum('amount');
+            
+        $growthRate = $previousPeriodRevenue > 0 
+            ? (($totalAmount - $previousPeriodRevenue) / $previousPeriodRevenue) * 100 
+            : ($totalAmount > 0 ? 100 : 0);
+            
+        return [
+            'totalOrders' => $totalOrders,
+            'totalAmount' => $totalAmount,
+            'averageOrderValue' => $averageOrderValue,
+            'revenueBySource' => $revenueBySource,
+            'maxDailyRevenue' => $maxDailyRevenue ? [
+                'date' => $maxDailyRevenue->date,
+                'amount' => $maxDailyRevenue->total
+            ] : null,
+            'averagePerDay' => $averagePerDay,
+            'primaryCurrency' => $revenueData->isNotEmpty() ? $revenueData->first()->currency : '',
+            'allTimeRevenue' => $allTimeRevenue,
+            'monthToDateRevenue' => $monthToDateRevenue,
+            'previousPeriodRevenue' => $previousPeriodRevenue,
+            'growthRate' => $growthRate        ];
+    }
+
     /**
      * Get the Revenue data grouped by day.
      *

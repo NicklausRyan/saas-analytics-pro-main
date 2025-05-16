@@ -242,3 +242,8 @@ Route::prefix('/{id}')->group(function () {
 
     Route::post('/password', 'StatController@validatePassword')->name('stats.password');
 });
+
+// Revenue Tracker Test route
+Route::get('/revenue-tracker-test', function () {
+    return view('docs.revenue-tracker-test');
+})->middleware('auth')->name('revenue-tracker-test');
