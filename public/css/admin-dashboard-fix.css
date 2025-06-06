@@ -1,0 +1,76 @@
+/* Admin dashboard layout fix */
+.bg-base-1 {
+    background-color: #f8f9fa;
+}
+
+.bg-base-0 {
+    background-color: #ffffff;
+}
+
+/* Ensure that the main container has proper height and doesn't overflow */
+.bg-base-1.flex-fill {
+    min-height: calc(100vh - 70px); /* Adjust based on your header height */
+    display: flex;
+    flex-direction: column;
+}
+
+/* Fix for sections appearing below sidebar */
+.col-md-9.col-lg-10 {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+}
+
+/* Sidebar styles enhanced for better visibility */
+.admin-sidebar {
+    margin-bottom: 1rem;
+    background-color: #fff;
+    border-radius: 0.25rem;
+    box-shadow: 0 .125rem .25rem rgba(0,0,0,.075);
+}
+
+/* Ensure content stays in the right column */
+@media (min-width: 768px) {
+    .row {
+        display: flex;
+        flex-wrap: wrap;
+        width: 100%;
+    }
+      .col-md-3.col-lg-2 {
+        position: sticky;
+        top: 1rem;
+        height: auto;
+        overflow-y: visible;
+        align-self: flex-start;
+    }
+    
+    .col-md-9.col-lg-10 {
+        width: calc(100% - 16.67%);
+        flex: 0 0 calc(100% - 16.67%);
+    }
+}
+
+/* Fix for mobile view */
+@media (max-width: 767.98px) {
+    .col-md-9.col-lg-10 {
+        width: 100%;
+        flex: 0 0 100%;
+    }
+    
+    /* Improve mobile sidebar toggle */
+    #admin-sidebar-toggle {
+        display: block;
+        width: 100%;
+        margin-bottom: 1rem;
+    }
+    
+    /* Hide sidebar by default on mobile */
+    #admin-sidebar-nav {
+        display: none;
+    }
+    
+    /* Show sidebar when toggled */
+    #admin-sidebar-nav.show {
+        display: flex;
+    }
+}

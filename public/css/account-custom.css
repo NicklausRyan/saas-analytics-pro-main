@@ -1,0 +1,340 @@
+/* Custom styling for the account page */
+.tab-pane {
+    animation: fadeIn 0.3s ease-in-out;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+/* Enhance sidebar navigation appearance */
+.account-container .side-nav .nav-link {
+    border-radius: 6px;
+    margin-bottom: 2px;
+    color: #555;
+    font-weight: 500;
+    transition: all 0.2s ease;
+}
+
+.account-container .side-nav .nav-link:hover {
+    background-color: #f5f5f5;
+    color: #0070f3;
+}
+
+.account-container .side-nav .nav-link.active {
+    background-color: #0070f3;
+    color: white;
+    box-shadow: 0 2px 5px rgba(0, 112, 243, 0.2);
+}
+
+.account-container .side-nav .nav-link svg {
+    transition: all 0.2s ease;
+}
+
+.account-container .side-nav .nav-link:hover svg,
+.account-container .side-nav .nav-link.active svg {
+    transform: scale(1.1);
+}
+
+/* Ensure the account page has proper spacing */
+.account-container {
+    min-height: calc(100vh - 200px);
+}
+
+/* Fix tab navigation structure */
+.account-container .row {
+    display: flex;
+    flex-wrap: wrap;
+}
+
+.account-container .tab-content {
+    display: block;
+    width: 100%;
+    position: relative;
+}
+
+/* Fix tab content display */
+#account-tabs-content .tab-pane {
+    display: none;
+    position: relative;
+    width: 100%;
+    top: 0;
+    left: 0;
+}
+
+#account-tabs-content .tab-pane.active {
+    display: block;
+}
+
+/* Ensure sidebar and content are properly aligned */
+@media (min-width: 992px) {
+    .account-container .col-lg-3,
+    .account-container .col-lg-9 {
+        display: flex;
+        flex-direction: column;
+    }
+    
+    .account-container .side-nav-container {
+        height: 100%;
+    }
+    
+    .account-container .side-nav {
+        height: 100%;
+    }
+}
+
+/* Enhance the appearance of form controls */
+.account-container .form-control {
+    border-radius: 4px;
+    transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+}
+
+.account-container .form-control:focus {
+    border-color: #0070f3;
+    box-shadow: 0 0 0 0.2rem rgba(0, 112, 243, 0.1);
+}
+
+.account-container .btn-primary {
+    background-color: #0070f3;
+    border-color: #0070f3;
+    border-radius: 5px;
+}
+
+.account-container .btn-primary:hover {
+    background-color: #005cc5;
+    border-color: #005cc5;
+}
+
+/* Style improvements for alerts */
+.account-container .alert {
+    border-radius: 5px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    border-width: 0;
+}
+
+.account-container .alert-info {
+    background-color: rgba(0, 112, 243, 0.1);
+    color: #0070f3;
+}
+
+.account-container .alert-danger {
+    background-color: rgba(255, 45, 85, 0.1);
+    color: #ff2d55;
+}
+
+.account-container .alert-success {
+    background-color: rgba(52, 199, 89, 0.1);
+    color: #34c759;
+}
+
+/* Profile picture upload container */
+.account-container .picture-container {
+    position: relative;
+    display: inline-block;
+    margin-bottom: 1rem;
+}
+
+.account-container .picture-container img {
+    border-radius: 50%;
+    border: 2px solid #eaeaea;
+    transition: all 0.2s ease;
+}
+
+.account-container .picture-container:hover img {
+    border-color: #0070f3;
+}
+
+/* Improve card and form appearance */
+.account-container .card {
+    border-radius: 8px;
+    transition: all 0.2s ease-in-out;
+    margin-bottom: 1.5rem;
+}
+
+.account-container .card-header {
+    background-color: #f9f9f9;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+    border-top-left-radius: 8px;
+    border-top-right-radius: 8px;
+    padding: 1rem 1.25rem;
+}
+
+.account-container .card-body {
+    padding: 1.5rem;
+}
+
+/* Improve form field appearance */
+.account-container .form-group {
+    margin-bottom: 1.25rem;
+}
+
+.account-container label {
+    font-weight: 500;
+    margin-bottom: 0.5rem;
+    color: #333;
+}
+
+.account-container .form-control {
+    padding: 0.5rem 0.75rem;
+}
+
+/* Make select dropdowns consistent with other inputs */
+.account-container .custom-select {
+    height: calc(1.5em + 1rem + 2px);
+    padding: 0.5rem 1.75rem 0.5rem 0.75rem;
+    max-width: 100%;
+}
+
+/* Ensure all inputs are properly constrained */
+.account-container select,
+.account-container input,
+.account-container textarea {
+    max-width: 100%;
+}
+
+/* Improve button spacing */
+.account-container .btn {
+    margin-top: 0.5rem;
+    padding: 0.5rem 1.5rem;
+}
+
+/* Improved layout for account page */
+@media (min-width: 992px) {
+    /* Sticky sidebar navigation for large screens */
+    .account-container .side-nav-container {
+        position: sticky;
+        top: 1rem;
+        height: 100%;
+    }
+    
+    /* Ensure side navigation stays fixed */
+    .account-container .side-nav {
+        position: sticky;
+        top: 1rem;
+        display: flex;
+        flex-direction: column;
+    }
+    
+    /* Make panels have consistent sizing */
+    .account-container .tab-content {
+        width: 100%;
+        max-width: 800px;
+        display: block !important;
+    }
+    
+    /* Improve spacing between nav and content */
+    .account-container .col-lg-3 {
+        padding-right: 1rem;
+        flex: 0 0 250px;
+        max-width: 250px;
+    }
+    
+    .account-container .col-lg-9 {
+        flex: 1;
+        max-width: calc(100% - 250px);
+    }
+    
+    /* Tab content proper display */
+    #account-tabs-content {
+        display: block;
+        width: 100%;
+        position: relative;
+    }
+    
+    #account-tabs-content .tab-pane {
+        width: 100%;
+        position: relative;
+    }
+    
+    /* Restrict form width for better readability */
+    .account-container .card-body form {
+        max-width: 90%;
+        margin: 0 auto;
+    }
+}
+
+/* Mobile responsiveness improvements */
+@media (max-width: 991.98px) {
+    .account-container .tab-content {
+        margin-top: 1rem;
+    }
+    
+    .account-container .card-body {
+        padding: 1.25rem 1rem;
+    }
+    
+    .account-container .card-body form {
+        max-width: 100%;
+    }
+    
+    /* Tab content proper display in mobile */
+    #account-tabs-content {
+        width: 100%;
+        display: block;
+    }
+    
+    #account-tabs-content .tab-pane {
+        width: 100%;
+        display: none;
+        position: relative;
+    }
+    
+    #account-tabs-content .tab-pane.active {
+        display: block;
+    }
+    
+    /* Make sure table content doesn't overflow */
+    .account-container table {
+        display: block;
+        width: 100%;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+}
+
+/* Extra small devices */
+@media (max-width: 575.98px) {
+    .account-container .card-header {
+        padding: 0.75rem 1rem;
+    }
+    
+    .account-container .card-body {
+        padding: 1rem 0.75rem;
+    }
+    
+    .account-container .form-group {
+        margin-bottom: 1rem;
+    }
+}
+
+/* Make cards consistent height with proper spacing */
+.account-container .card {
+    margin-bottom: 1.5rem;
+    height: auto;
+    width: 100%;
+}
+
+/* Ensure cards have proper spacing internally */
+.account-container .card-body {
+    padding: 1.5rem;
+}
+
+/* Tab content should take full width */
+.account-container #account-tabs-content {
+    width: 100%;
+    position: relative;
+    display: block;
+}
+
+/* Ensure each tab pane is a block element with proper positioning */
+.account-container #account-tabs-content .tab-pane {
+    width: 100%;
+    position: relative;
+}
+
+/* Ensure form elements are sized properly */
+.account-container .form-group {
+    margin-bottom: 1.25rem;
+    width: 100%;
+}

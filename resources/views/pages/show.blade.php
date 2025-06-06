@@ -22,9 +22,6 @@
                     {!! __($page->content) !!}
                 </div>
             </div>
-        </div>
-    </div>
+        </div>    </div>
 </div>
 @endsection
-
-@include('shared.sidebars.user')

@@ -1,0 +1,15 @@
+/* Fix for layout after sidebar removal */
+@media(min-width: 992px) {
+    .content {
+        margin-left: 0 !important;
+    }
+    
+    [dir=rtl] .content {
+        margin-right: 0 !important;
+    }
+}
+
+/* Override any remaining sidebar spacing */
+body {
+    overflow-x: hidden;
+}

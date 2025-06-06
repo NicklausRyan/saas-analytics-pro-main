@@ -11,6 +11,24 @@
 |
 */
 
+/*
+|--------------------------------------------------------------------------
+| Admin routes
+|--------------------------------------------------------------------------
+|
+| Admin panel routes are registered here
+|
+*/
+Route::group(['prefix' => 'admin', 'middleware' => ['auth', 'verified', 'admin'], 'as' => 'admin.'], function () {
+    Route::get('/', 'AdminController@dashboard')->name('dashboard');
+    Route::get('websites', 'AdminController@websites')->name('websites');
+    Route::get('users', 'AdminController@users')->name('users');
+    Route::get('pages', 'AdminController@pages')->name('pages');
+    Route::get('plans', 'AdminController@plans')->name('plans');
+    Route::get('payments', 'AdminController@payments')->name('payments');
+    Route::get('settings/{route?}', 'AdminController@settings')->name('settings');
+});
+
 // Auth routes
 Auth::routes(['verify' => true]);
 Route::post('login/tfa/validate', 'Auth\LoginController@validateTfaCode')->name('login.tfa.validate');
@@ -188,10 +206,7 @@ Route::post('webhooks/coinbase', 'WebhookController@coinbase')->name('webhooks.c
 
 // Developer routes
 Route::prefix('/developers')->group(function () {
-    Route::get('/', 'DeveloperController@index')->name('developers');
-    Route::get('/stats', 'DeveloperController@stats')->name('developers.stats');
-    Route::get('/websites', 'DeveloperController@websites')->name('developers.websites');
-    Route::get('/account', 'DeveloperController@account')->name('developers.account');
+    Route::get('/', 'DeveloperController@combined')->name('developers');
 });
 
 // Stat routes

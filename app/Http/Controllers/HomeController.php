@@ -21,8 +21,7 @@ class HomeController extends Controller
      * Show the home page.
      *
      * @return \Illuminate\Contracts\Foundation\Application|\Illuminate\Contracts\View\Factory|\Illuminate\Http\RedirectResponse|\Illuminate\View\View
-     */
-    public function index()
+     */    public function index()
     {
         // If there's no DB connection setup
         if (!env('DB_DATABASE')) {

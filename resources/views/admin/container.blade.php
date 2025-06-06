@@ -1,10 +1,9 @@
-@extends('layouts.app')
+@extends('layouts.admin')
 
-@section('content')
-<div class="bg-base-1 flex-fill">
-    <div class="container py-3 my-3">
-        @include($view)
-    </div>
-</div>
+@section('admin_content')
+    @if(isset($view))
+        @include($view, ['container' => true])
+    @elseif(isset($__content))
+        {!! $__content !!}
+    @endif
 @endsection
-@include('admin.sidebar')

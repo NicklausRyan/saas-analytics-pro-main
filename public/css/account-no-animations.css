@@ -1,0 +1,277 @@
+/* Account Page - No Animations & Dark Mode Support */
+
+/* Remove all animations and transitions for account pages */
+.account-page *, 
+.account-page *::before, 
+.account-page *::after {
+    animation: none !important;
+    animation-duration: 0s !important;
+    animation-delay: 0s !important;
+    transition: none !important;
+    transition-duration: 0s !important;
+    transition-delay: 0s !important;
+}
+
+/* Disable specific animations */
+@keyframes fade-in {
+    from { opacity: 1; }
+    to { opacity: 1; }
+}
+
+@keyframes pulse-ring {
+    from { transform: none; }
+    to { transform: none; }
+}
+
+@keyframes pulse-dot {
+    from { transform: none; }
+    to { transform: none; }
+}
+
+@keyframes spinner-border {
+    from { transform: none; }
+    to { transform: none; }
+}
+
+@keyframes spinner-grow {
+    from { transform: none; }
+    to { transform: none; }
+}
+
+/* Account page specific styles */
+.account-page {
+    background-color: #f8f9fa;
+}
+
+.account-page .card {
+    border: 1px solid #dee2e6;
+    background-color: #ffffff;
+    box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+}
+
+.account-page .card-body {
+    background-color: #ffffff;
+}
+
+.account-page .btn:hover,
+.account-page .btn:focus {
+    transform: none !important;
+    box-shadow: none !important;
+}
+
+/* Ensure sidebar and navigation elements have no animations */
+.account-page .nav-link,
+.account-page .dropdown-toggle,
+.account-page .sidebar-item {
+    transition: none !important;
+    animation: none !important;
+}
+
+/* Dark mode styles */
+@media (prefers-color-scheme: dark) {
+    .account-page {
+        background-color: #1a1a1a !important;
+        color: #e9ecef !important;
+    }
+
+    .account-page .card {
+        background-color: #262626 !important;
+        border-color: #404040 !important;
+        color: #e9ecef !important;
+    }
+
+    .account-page .card-body {
+        background-color: #262626 !important;
+        color: #e9ecef !important;
+    }
+
+    .account-page .text-dark {
+        color: #e9ecef !important;
+    }
+
+    .account-page .text-muted {
+        color: #b5b5b5 !important;
+    }
+
+    .account-page .bg-primary {
+        background-color: #70a8ff !important;
+    }
+
+    .account-page .text-primary {
+        color: #70a8ff !important;
+    }
+
+    .account-page .border-0 {
+        border-color: #404040 !important;
+    }
+
+    .account-page .shadow-sm {
+        box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.5) !important;
+    }
+
+    .account-page .breadcrumb {
+        background-color: #262626 !important;
+    }
+
+    .account-page .breadcrumb-item a {
+        color: #70a8ff !important;
+    }
+
+    .account-page .breadcrumb-item.active {
+        color: #e9ecef !important;
+    }
+
+    .account-page h1, .account-page h2, .account-page h3, 
+    .account-page h4, .account-page h5, .account-page h6 {
+        color: #e9ecef !important;
+    }
+}
+
+/* Force dark mode styles when dark theme is active */
+body[data-theme="dark"] .account-page,
+[data-theme="dark"] .account-page {
+    background-color: #1a1a1a !important;
+    color: #e9ecef !important;
+}
+
+body[data-theme="dark"] .account-page .card,
+[data-theme="dark"] .account-page .card {
+    background-color: #262626 !important;
+    border-color: #404040 !important;
+    color: #e9ecef !important;
+}
+
+body[data-theme="dark"] .account-page .card-body,
+[data-theme="dark"] .account-page .card-body {
+    background-color: #262626 !important;
+    color: #e9ecef !important;
+}
+
+body[data-theme="dark"] .account-page .text-dark,
+[data-theme="dark"] .account-page .text-dark {
+    color: #e9ecef !important;
+}
+
+body[data-theme="dark"] .account-page .text-muted,
+[data-theme="dark"] .account-page .text-muted {
+    color: #b5b5b5 !important;
+}
+
+body[data-theme="dark"] .account-page .bg-primary,
+[data-theme="dark"] .account-page .bg-primary {
+    background-color: #70a8ff !important;
+}
+
+body[data-theme="dark"] .account-page .text-primary,
+[data-theme="dark"] .account-page .text-primary {
+    color: #70a8ff !important;
+}
+
+body[data-theme="dark"] .account-page .border-0,
+[data-theme="dark"] .account-page .border-0 {
+    border-color: #404040 !important;
+}
+
+body[data-theme="dark"] .account-page .shadow-sm,
+[data-theme="dark"] .account-page .shadow-sm {
+    box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.5) !important;
+}
+
+body[data-theme="dark"] .account-page .breadcrumb,
+[data-theme="dark"] .account-page .breadcrumb {
+    background-color: #262626 !important;
+}
+
+body[data-theme="dark"] .account-page .breadcrumb-item a,
+[data-theme="dark"] .account-page .breadcrumb-item a {
+    color: #70a8ff !important;
+}
+
+body[data-theme="dark"] .account-page .breadcrumb-item.active,
+[data-theme="dark"] .account-page .breadcrumb-item.active {
+    color: #e9ecef !important;
+}
+
+body[data-theme="dark"] .account-page h1, 
+body[data-theme="dark"] .account-page h2, 
+body[data-theme="dark"] .account-page h3,
+body[data-theme="dark"] .account-page h4, 
+body[data-theme="dark"] .account-page h5, 
+body[data-theme="dark"] .account-page h6,
+[data-theme="dark"] .account-page h1, 
+[data-theme="dark"] .account-page h2, 
+[data-theme="dark"] .account-page h3,
+[data-theme="dark"] .account-page h4, 
+[data-theme="dark"] .account-page h5, 
+[data-theme="dark"] .account-page h6 {
+    color: #e9ecef !important;
+}
+
+/* Ensure no hover/focus animations */
+body[data-theme="dark"] .account-page .stretched-link:hover,
+body[data-theme="dark"] .account-page .stretched-link:focus,
+[data-theme="dark"] .account-page .stretched-link:hover,
+[data-theme="dark"] .account-page .stretched-link:focus,
+.account-page .stretched-link:hover,
+.account-page .stretched-link:focus {
+    transform: none !important;
+    transition: none !important;
+    animation: none !important;
+}
+
+/* Remove opacity animations for icons */
+.account-page .opacity-10 {
+    opacity: 0.1 !important;
+}
+
+body[data-theme="dark"] .account-page .opacity-10,
+[data-theme="dark"] .account-page .opacity-10 {
+    opacity: 0.1 !important;
+}
+
+/* Form elements dark mode support */
+body[data-theme="dark"] .account-page .form-control,
+[data-theme="dark"] .account-page .form-control {
+    background-color: #404040 !important;
+    border-color: #6c757d !important;
+    color: #e9ecef !important;
+}
+
+body[data-theme="dark"] .account-page .form-control:focus,
+[data-theme="dark"] .account-page .form-control:focus {
+    background-color: #404040 !important;
+    border-color: #70a8ff !important;
+    color: #e9ecef !important;
+    box-shadow: none !important;
+}
+
+/* Button styles for dark mode */
+body[data-theme="dark"] .account-page .btn-primary,
+[data-theme="dark"] .account-page .btn-primary {
+    background-color: #70a8ff !important;
+    border-color: #70a8ff !important;
+    color: #000 !important;
+}
+
+body[data-theme="dark"] .account-page .btn-secondary,
+[data-theme="dark"] .account-page .btn-secondary {
+    background-color: #b5b5b5 !important;
+    border-color: #b5b5b5 !important;
+    color: #000 !important;
+}
+
+/* Ensure consistent background colors to prevent whitespace issues */
+body[data-theme="dark"] .account-page,
+body[data-theme="dark"] .account-page .container,
+body[data-theme="dark"] .account-page .container-fluid,
+body[data-theme="dark"] .account-page .row,
+body[data-theme="dark"] .account-page .col,
+body[data-theme="dark"] .account-page [class*="col-"],
+[data-theme="dark"] .account-page,
+[data-theme="dark"] .account-page .container,
+[data-theme="dark"] .account-page .container-fluid,
+[data-theme="dark"] .account-page .row,
+[data-theme="dark"] .account-page .col,
+[data-theme="dark"] .account-page [class*="col-"] {
+    background-color: #1a1a1a !important;
+}

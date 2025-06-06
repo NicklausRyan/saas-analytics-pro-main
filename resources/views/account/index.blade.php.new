@@ -1,0 +1,464 @@
+@extends('layouts.app')
+
+@section('head_content')
+    <link href="{{ asset('css/account-custom.css') }}" rel="stylesheet">
+@endsection
+
+@section('content')
+<div class="bg-base-1 flex-fill account-container">
+    <div class="container py-3 my-3">
+
+@section('site_title', formatTitle([__('Account'), config('settings.title')]))
+
+@include('shared.breadcrumbs', ['breadcrumbs' => [
+    ['url' => route('dashboard'), 'title' => __('Home')],
+    ['title' => __('Account')]
+]])
+
+<h1 class="h2 mb-4 d-inline-block">{{ __('Account') }}</h1>
+
+@include('shared.message')
+
+<!-- Horizontal tab navigation -->
+<div class="card border-0 shadow-sm mb-4">
+    <div class="card-body">
+        <ul class="nav nav-pills nav-justified mb-3" id="account-tabs" role="tablist">
+            <li class="nav-item">
+                <a class="nav-link active" id="profile-tab" data-toggle="tab" href="#profile" role="tab" aria-controls="profile" aria-selected="true">
+                    <div class="d-flex align-items-center justify-content-center">
+                        @include('icons.portrait', ['class' => 'width-4 height-4 fill-current mr-2'])
+                        {{ __('Profile') }}
+                    </div>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" id="security-tab" data-toggle="tab" href="#security" role="tab" aria-controls="security" aria-selected="false">
+                    <div class="d-flex align-items-center justify-content-center">
+                        @include('icons.lock', ['class' => 'width-4 height-4 fill-current mr-2'])
+                        {{ __('Security') }}
+                    </div>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" id="preferences-tab" data-toggle="tab" href="#preferences" role="tab" aria-controls="preferences" aria-selected="false">
+                    <div class="d-flex align-items-center justify-content-center">
+                        @include('icons.tune', ['class' => 'width-4 height-4 fill-current mr-2'])
+                        {{ __('Preferences') }}
+                    </div>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" id="plan-tab" data-toggle="tab" href="#plan" role="tab" aria-controls="plan" aria-selected="false">
+                    <div class="d-flex align-items-center justify-content-center">
+                        @include('icons.package', ['class' => 'width-4 height-4 fill-current mr-2'])
+                        {{ __('Plan') }}
+                    </div>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" id="api-tab" data-toggle="tab" href="#api" role="tab" aria-controls="api" aria-selected="false">
+                    <div class="d-flex align-items-center justify-content-center">
+                        @include('icons.code', ['class' => 'width-4 height-4 fill-current mr-2'])
+                        {{ __('API') }}
+                    </div>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" id="delete-tab" data-toggle="tab" href="#delete" role="tab" aria-controls="delete" aria-selected="false">
+                    <div class="d-flex align-items-center justify-content-center">
+                        @include('icons.delete', ['class' => 'width-4 height-4 fill-current mr-2'])
+                        {{ __('Delete') }}
+                    </div>
+                </a>
+            </li>
+        </ul>
+    </div>
+</div>
+
+<!-- Tab content -->
+<div class="tab-content" id="account-tabs-content">
+    <!-- Profile Tab -->
+    <div class="tab-pane fade show active" id="profile" role="tabpanel" aria-labelledby="profile-tab">
+        <div class="card border-0 shadow-sm">
+            <div class="card-header align-items-center">
+                <div class="row">
+                    <div class="col">
+                        <div class="font-weight-medium py-1">{{ __('Profile') }}</div>
+                    </div>
+                </div>
+            </div>
+            <div class="card-body">
+                @if(Auth::user()->getPendingEmail())
+                    <div class="alert alert-info d-flex" role="alert">
+                        <div>
+                            {{ __('A confirmation email has been sent to :email.', ['email' => Auth::user()->getPendingEmail()]) }}
+                            {{ __('Click on the confirmation link in the email to change your email address.') }}
+                            <hr>
+                            <form method="post" action="{{ route('account.profile.resend') }}" class="d-inline">
+                                @csrf
+                                <button type="submit" class="btn btn-link d-inline p-0 m-0">{{ __('Resend confirmation email') }}</button>
+                            </form> {{ __('or') }} 
+                            <form method="post" action="{{ route('account.profile.cancel') }}" class="d-inline">
+                                @csrf
+                                <button type="submit" class="btn btn-link d-inline text-danger p-0 m-0">{{ __('Cancel the change') }}</button>
+                            </form>
+                        </div>
+                    </div>
+                @endif
+                
+                <form action="{{ route('account.profile.update') }}" method="post" enctype="multipart/form-data">
+                    @csrf
+                    
+                    <div class="form-group">
+                        <label for="i-name">{{ __('Name') }}</label>
+                        <input type="text" id="i-name" class="form-control{{ $errors->has('name') ? ' is-invalid' : '' }}" name="name" value="{{ old('name') ?? Auth::user()->name }}">
+                        @if ($errors->has('name'))
+                            <span class="invalid-feedback" role="alert">
+                                <strong>{{ $errors->first('name') }}</strong>
+                            </span>
+                        @endif
+                    </div>
+
+                    <div class="form-group">
+                        <label for="i-email">{{ __('Email') }}</label>
+                        <input type="text" id="i-email" class="form-control{{ $errors->has('email') ? ' is-invalid' : '' }}" name="email" value="{{ old('email') ?? Auth::user()->email }}">
+                        @if ($errors->has('email'))
+                            <span class="invalid-feedback" role="alert">
+                                <strong>{{ $errors->first('email') }}</strong>
+                            </span>
+                        @endif
+                    </div>
+
+                    <div class="form-group">
+                        <label for="i-timezone">{{ __('Timezone') }}</label>
+                        <select name="timezone" id="i-timezone" class="custom-select{{ $errors->has('timezone') ? ' is-invalid' : '' }}">
+                            @foreach(timezone_identifiers_list() as $timezone)
+                                <option value="{{ $timezone }}" @if ((old('timezone') !== null && old('timezone') == $timezone) || (Auth::user()->timezone == $timezone && old('timezone') == null)) selected @endif>{{ $timezone }}</option>
+                            @endforeach
+                        </select>
+                        @if ($errors->has('timezone'))
+                            <span class="invalid-feedback" role="alert">
+                                <strong>{{ $errors->first('timezone') }}</strong>
+                            </span>
+                        @endif
+                    </div>
+
+                    <button type="submit" name="submit" class="btn btn-primary">{{ __('Save') }}</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Security Tab -->
+    <div class="tab-pane fade" id="security" role="tabpanel" aria-labelledby="security-tab">
+        <div class="card border-0 shadow-sm">
+            <div class="card-header align-items-center">
+                <div class="row">
+                    <div class="col">
+                        <div class="font-weight-medium py-1">{{ __('Security') }}</div>
+                    </div>
+                </div>
+            </div>
+            <div class="card-body">
+                <form action="{{ route('account.security') }}" method="post" enctype="multipart/form-data">
+                    @csrf
+
+                    <div class="form-group">
+                        <label for="i-current-password">{{ __('Current password') }}</label>
+                        <input type="password" name="current_password" id="i-current-password" class="form-control{{ $errors->has('current_password') ? ' is-invalid' : '' }}">
+                        @if ($errors->has('current_password'))
+                            <span class="invalid-feedback" role="alert">
+                                <strong>{{ $errors->first('current_password') }}</strong>
+                            </span>
+                        @endif
+                    </div>
+
+                    <div class="form-group">
+                        <label for="i-password">{{ __('New password') }}</label>
+                        <input type="password" name="password" id="i-password" class="form-control{{ $errors->has('password') ? ' is-invalid' : '' }}">
+                        @if ($errors->has('password'))
+                            <span class="invalid-feedback" role="alert">
+                                <strong>{{ $errors->first('password') }}</strong>
+                            </span>
+                        @endif
+                    </div>
+
+                    <div class="form-group">
+                        <label for="i-password-confirmation">{{ __('Confirm new password') }}</label>
+                        <input type="password" name="password_confirmation" id="i-password-confirmation" class="form-control{{ $errors->has('password_confirmation') ? ' is-invalid' : '' }}">
+                        @if ($errors->has('password_confirmation'))
+                            <span class="invalid-feedback" role="alert">
+                                <strong>{{ $errors->first('password_confirmation') }}</strong>
+                            </span>
+                        @endif
+                    </div>
+
+                    @if(config('settings.login_tfa'))
+                        <div class="form-group">
+                            <div class="custom-control custom-checkbox">
+                                <input type="checkbox" name="tfa" class="custom-control-input{{ $errors->has('tfa') ? ' is-invalid' : '' }}" id="i-tfa" @if(Auth::user()->tfa) checked @endif>
+                                <label class="custom-control-label" for="i-tfa">{{ __('Two-factor authentication') }}</label>
+                                @if ($errors->has('tfa'))
+                                    <span class="invalid-feedback" role="alert">
+                                        <strong>{{ $errors->first('tfa') }}</strong>
+                                    </span>
+                                @endif
+                            </div>
+                        </div>
+                    @endif
+
+                    <button type="submit" name="submit" class="btn btn-primary">{{ __('Save') }}</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Preferences Tab -->
+    <div class="tab-pane fade" id="preferences" role="tabpanel" aria-labelledby="preferences-tab">
+        <div class="card border-0 shadow-sm">
+            <div class="card-header align-items-center">
+                <div class="row">
+                    <div class="col">
+                        <div class="font-weight-medium py-1">{{ __('Preferences') }}</div>
+                    </div>
+                </div>
+            </div>
+            <div class="card-body">
+                <form action="{{ route('account.preferences') }}" method="post" enctype="multipart/form-data">
+                    @csrf
+
+                    <div class="form-group">
+                        <div class="custom-control custom-checkbox">
+                            <input type="checkbox" name="email_account_limit" value="1" class="custom-control-input {{ $errors->has('email_account_limit') ? ' is-invalid' : '' }}" id="customCheckbox2" @if(Auth::user()->email_account_limit && old('email_account_limit') == null || old('email_account_limit')) checked @endif>
+                            <label class="custom-control-label cursor-pointer" for="customCheckbox2">
+                                {{ __('Email me when I reach 80% of my plan\'s limit') }}
+                            </label>
+                        </div>
+                    </div>
+
+                    <button type="submit" name="submit" class="btn btn-primary">{{ __('Save') }}</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Plan Tab -->
+    <div class="tab-pane fade" id="plan" role="tabpanel" aria-labelledby="plan-tab">
+        <div class="card border-0 shadow-sm">
+            <div class="card-header align-items-center">
+                <div class="row">
+                    <div class="col">
+                        <div class="font-weight-medium py-1">{{ __('Plan') }}</div>
+                    </div>
+                </div>
+            </div>
+            <div class="card-body">
+                <form action="{{ route('account.plan') }}" method="post" enctype="multipart/form-data">
+                    @csrf
+
+                    <div class="row">
+                        <div class="col-12 col-lg-6 mb-3">
+                            <div class="text-muted">{{ __('Plan') }}</div>
+                            <div>{{ Auth::user()->plan->name }}</div>
+                        </div>
+
+                        @if(!Auth::user()->planOnDefault())
+                            <div class="col-12 col-lg-6 mb-3">
+                                <div class="text-muted">{{ __('Ends at') }}</div>
+                                <div>{{ Auth::user()->plan_ends_at ? Carbon\Carbon::parse(Auth::user()->plan_ends_at)->format(__('Y-m-d')) : __('Unlimited') }}</div>
+                            </div>
+                        @endif
+                    </div>
+
+                    <div class="hr-text mt-0"><span class="font-weight-medium text-body">{{ __('Features') }}</span></div>
+
+                    <div class="row m-n2">
+                        <div class="col-12 col-md-6 p-2 d-flex align-items-center">
+                            @if(isset(Auth::user()->plan->features) && is_object(Auth::user()->plan->features) && property_exists(Auth::user()->plan->features, 'stats') && Auth::user()->plan->features->stats === true)
+                                @include('icons.checkmark', ['class' => 'flex-shrink-0 text-success fill-current width-4 height-4'])
+                            @else
+                                @include('icons.close', ['class' => 'flex-shrink-0 text-muted fill-current width-4 height-4'])
+                            @endif
+
+                            <div class="{{ (__('lang_dir') == 'rtl' ? 'mr-2' : 'ml-3') }}">
+                                {{ __('Statistics') }}
+                            </div>
+                        </div>
+                        
+                        <div class="col-12 col-md-6 p-2 d-flex align-items-center">
+                            @if(isset(Auth::user()->plan->features) && is_object(Auth::user()->plan->features) && isset(Auth::user()->plan->features->websites) && Auth::user()->plan->features->websites)
+                                @include('icons.checkmark', ['class' => 'flex-shrink-0 text-success fill-current width-4 height-4'])
+                            @else
+                                @include('icons.close', ['class' => 'flex-shrink-0 text-muted fill-current width-4 height-4'])
+                            @endif
+
+                            <div class="{{ (__('lang_dir') == 'rtl' ? 'mr-2' : 'ml-3') }}">
+                                {{ __(':number Websites', ['number' => Auth::user()->plan->features->websites < 0 ? __('Unlimited') : number_format(Auth::user()->plan->features->websites, 0, __('.'), __(','))]) }}
+                            </div>
+                        </div>
+                    </div>
+
+                    @if(paymentProcessors())
+                        <div class="mt-3">
+                            <a href="{{ route('pricing') }}" class="btn btn-outline-primary">{{ __('Upgrade') }}</a>
+                        </div>
+                    @endif
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- API Tab -->
+    <div class="tab-pane fade" id="api" role="tabpanel" aria-labelledby="api-tab">
+        <div class="card border-0 shadow-sm">
+            <div class="card-header align-items-center">
+                <div class="row">
+                    <div class="col">
+                        <div class="font-weight-medium py-1">{{ __('API') }}</div>
+                    </div>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="form-group">
+                    <label for="i-api-token">{{ __('API key') }}</label>
+                    <div class="input-group">
+                        <input type="text" id="i-api-token" class="form-control" value="{{ Auth::user()->api_token }}" readonly>
+                        <div class="input-group-append">
+                            <div class="btn btn-primary" data-tooltip-copy="true" title="{{ __('Copy') }}" data-text-copy="{{ __('Copy') }}" data-text-copied="{{ __('Copied') }}" data-clipboard="true" data-clipboard-target="#i-api-token">{{ __('Copy') }}</div>
+                        </div>
+                    </div>
+                </div>
+
+                <button type="button" class="btn btn-danger" data-toggle="modal" data-target="#modal" data-action="{{ route('account.api') }}" data-button="btn btn-danger" data-title="{{ __('Regenerate') }}" data-text="{{ __('Are you sure you want to regenerate your API key?') }}">{{ __('Regenerate') }}</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Delete Tab -->
+    <div class="tab-pane fade" id="delete" role="tabpanel" aria-labelledby="delete-tab">
+        <div class="card border-0 shadow-sm">
+            <div class="card-header align-items-center">
+                <div class="row">
+                    <div class="col">
+                        <div class="font-weight-medium py-1">{{ __('Delete') }}</div>
+                    </div>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="alert alert-danger" role="alert">
+                    {{ __('Deleting your account is permanent, and will remove all the data associated with it.') }}
+                </div>
+
+                <form action="{{ route('account.destroy') }}" method="post" enctype="multipart/form-data">
+                    @csrf
+
+                    <div class="form-group">
+                        <label for="i-current-password">{{ __('Current password') }}</label>
+                        <input type="password" name="current_password" id="i-current-password" class="form-control{{ $errors->has('current_password') ? ' is-invalid' : '' }}">
+                        @if ($errors->has('current_password'))
+                            <span class="invalid-feedback" role="alert">
+                                <strong>{{ $errors->first('current_password') }}</strong>
+                            </span>
+                        @endif
+                    </div>
+
+                    <button type="submit" name="submit" class="btn btn-danger">{{ __('Delete') }}</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+/* Geist UI inspired styling */
+.card {
+    border-radius: 5px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.05) !important;
+}
+
+.card-header {
+    background-color: transparent;
+}
+
+.nav-pills .nav-link {
+    border-radius: 5px !important;
+    font-weight: 500;
+    color: #666;
+    transition: all 0.2s;
+    margin: 0 3px;
+}
+
+.nav-pills .nav-link:hover {
+    background-color: rgba(0,0,0,0.03);
+}
+
+.nav-pills .nav-link.active {
+    background-color: #0070f3;
+    color: #fff;
+}
+
+.form-control {
+    border-radius: 5px;
+    height: calc(1.6em + 0.75rem + 2px);
+    border: 1px solid #eaeaea;
+}
+
+.form-control:focus {
+    box-shadow: 0 0 0 2px rgba(0,112,243,0.2);
+    border-color: #0070f3;
+}
+
+.btn-primary {
+    background-color: #0070f3;
+    border-color: #0070f3;
+    border-radius: 5px;
+    font-weight: 500;
+    padding: 0.5rem 1rem;
+}
+
+.btn-primary:hover {
+    background-color: #0060df;
+    border-color: #0060df;
+}
+
+.btn-danger {
+    background-color: #ff4d4f;
+    border-color: #ff4d4f;
+    border-radius: 5px;
+}
+
+.btn-danger:hover {
+    background-color: #ff3434;
+    border-color: #ff3434;
+}
+
+.custom-control-input:checked ~ .custom-control-label::before {
+    background-color: #0070f3;    
+    border-color: #0070f3;
+}
+
+/* Mobile responsive adjustments */
+@media (max-width: 768px) {
+    .nav-pills .nav-link {
+        padding: 0.5rem 0.25rem;
+        font-size: 0.85rem;
+    }
+    
+    .nav-pills .nav-link .d-flex svg {
+        margin-right: 0 !important;
+    }
+    
+    .nav-pills .nav-link .d-flex span {
+        display: none;
+    }
+}
+</style>
+
+    </div>
+</div>
+</div>
+@endsection
+
+@section('scripts')
+    <script src="{{ asset('js/account-tabs.js') }}"></script>
+@endsection

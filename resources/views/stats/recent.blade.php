@@ -94,7 +94,7 @@
                                 <div class="d-flex align-items-center">
                                     <div class="width-4 flex-shrink-0 {{ (__('lang_dir') == 'rtl' ? 'ml-2' : 'mr-2') }}"></div>
                                     <div class="text-muted text-truncate small">
-                                        {{ $pageview->created_at->format(__('Y-m-d')) }}
+                                        {{ $pageview->created_at->format('Y-m-d') }}
                                     </div>
                                 </div>
                             </div>

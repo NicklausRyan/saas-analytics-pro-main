@@ -1,0 +1,4 @@
+/* Hide navbar on dashboard pages */
+body.dashboard-page #main-navbar {
+    display: none !important;
+}

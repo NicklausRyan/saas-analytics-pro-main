@@ -13,17 +13,38 @@ trait DateRangeTrait
      * @param $from
      * @param $to
      * @return array
-     */
-    private function range($from = null, $to = null)
+     */    private function range($from = null, $to = null)
     {
         try {
-            $to = request()->input('to') ? Carbon::createFromFormat('Y-m-d', request()->input('to')) : ($to ?? Carbon::now());
+            $toInput = request()->input('to');
+            if ($toInput) {
+                // Clean the input and validate format
+                $toInput = trim($toInput);
+                if (preg_match('/^\d{4}-\d{2}-\d{2}$/', $toInput)) {
+                    $to = Carbon::createFromFormat('Y-m-d', $toInput);
+                } else {
+                    $to = Carbon::parse($toInput);
+                }
+            } else {
+                $to = $to ?? Carbon::now();
+            }
         } catch (\Exception $e) {
             $to = Carbon::now();
         }
 
         try {
-            $from = request()->input('from') ? Carbon::createFromFormat('Y-m-d', request()->input('from')) : ($from ?? $to);
+            $fromInput = request()->input('from');
+            if ($fromInput) {
+                // Clean the input and validate format
+                $fromInput = trim($fromInput);
+                if (preg_match('/^\d{4}-\d{2}-\d{2}$/', $fromInput)) {
+                    $from = Carbon::createFromFormat('Y-m-d', $fromInput);
+                } else {
+                    $from = Carbon::parse($fromInput);
+                }
+            } else {
+                $from = $from ?? $to;
+            }
         } catch (\Exception $exception) {
             $from = $to;
         }
@@ -64,11 +85,19 @@ trait DateRangeTrait
      * @param $format
      * @param mixed $output
      * @return mixed
-     */
-    private function calcAllDates($from, $to, $unit, $format, $output = 0)
+     */    private function calcAllDates($from, $to, $unit, $format, $output = 0)
     {
-        $from = Carbon::createFromFormat($format, $from);
-        $to = Carbon::createFromFormat($format, $to);
+        try {
+            $from = Carbon::createFromFormat($format, $from);
+        } catch (\Exception $e) {
+            $from = Carbon::parse($from);
+        }
+        
+        try {
+            $to = Carbon::createFromFormat($format, $to);
+        } catch (\Exception $e) {
+            $to = Carbon::parse($to);
+        }
 
         $possibleDateResults[$from->copy()->format($format)] = $output;
 

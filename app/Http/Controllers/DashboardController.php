@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Stat;
 use App\Traits\DateRangeTrait;
 use App\Models\Website;
+use App\Models\Revenue;
 use Illuminate\Http\Request;
 
 class DashboardController extends Controller
@@ -33,29 +34,40 @@ class DashboardController extends Controller
         $visitorsOld = Stat::whereIn('website_id', Website::select('id')->where('user_id', '=', $request->user()->id))
             ->where('name', '=', 'visitors')
             ->whereBetween('date', [$range['from_old'], $range['to_old']])
-            ->sum('count');
-
-        $pageviews = Stat::whereIn('website_id', Website::select('id')->where('user_id', '=', $request->user()->id))
-            ->where('name', '=', 'pageviews')
+            ->sum('count');        // Get total revenue
+        $totalRevenue = Revenue::whereIn('website_id', Website::select('id')->where('user_id', '=', $request->user()->id))
             ->whereBetween('date', [$range['from'], $range['to']])
-            ->sum('count');
-
-        $pageviewsOld = Stat::whereIn('website_id', Website::select('id')->where('user_id', '=', $request->user()->id))
-            ->where('name', '=', 'pageviews')
+            ->sum('amount');
+            
+        // Get previous period revenue for growth calculation
+        $totalRevenueOld = Revenue::whereIn('website_id', Website::select('id')->where('user_id', '=', $request->user()->id))
             ->whereBetween('date', [$range['from_old'], $range['to_old']])
-            ->sum('count');
+            ->sum('amount');
+            
+        // Get all-time revenue
+        $allTimeRevenue = Revenue::whereIn('website_id', Website::select('id')->where('user_id', '=', $request->user()->id))
+            ->sum('amount');
+            
+        // Get the most common currency
+        $primaryCurrency = Revenue::whereIn('website_id', Website::select('id')
+            ->where('user_id', '=', $request->user()->id))
+            ->selectRaw('currency, COUNT(*) as count')
+            ->groupBy('currency')
+            ->orderBy('count', 'desc')
+            ->first()?->currency ?? 'USD';
 
         $search = $request->input('search');
         $searchBy = in_array($request->input('search_by'), ['domain']) ? $request->input('search_by') : 'domain';
         $sortBy = in_array($request->input('sort_by'), ['id', 'domain']) ? $request->input('sort_by') : 'id';
         $sort = in_array($request->input('sort'), ['asc', 'desc']) ? $request->input('sort') : 'desc';
-        $perPage = in_array($request->input('per_page'), [10, 25, 50, 100]) ? $request->input('per_page') : config('settings.paginate');
-
-        $websites = Website::with([
+        $perPage = in_array($request->input('per_page'), [10, 25, 50, 100]) ? $request->input('per_page') : config('settings.paginate');        $websites = Website::with([
                 'visitors' => function ($query) use ($range) {
                     $query->whereBetween('date', [$range['from'], $range['to']]);
                 },
                 'pageviews' => function ($query) use ($range) {
+                    $query->whereBetween('date', [$range['from'], $range['to']]);
+                },
+                'revenue' => function ($query) use ($range) {
                     $query->whereBetween('date', [$range['from'], $range['to']]);
                 }]
             )
@@ -67,6 +79,15 @@ class DashboardController extends Controller
             ->paginate($perPage)
             ->appends(['from' => $range['from'], 'to' => $range['to'], 'search' => $search, 'search_by' => $searchBy, 'sort_by' => $sortBy, 'sort' => $sort, 'per_page' => $perPage]);
 
-        return view('dashboard.index', ['visitors' => $visitors, 'visitorsOld' => $visitorsOld, 'pageviews' => $pageviews, 'pageviewsOld' => $pageviewsOld, 'range' => $range, 'websites' => $websites]);
+        return view('dashboard.index', [
+            'visitors' => $visitors, 
+            'visitorsOld' => $visitorsOld, 
+            'totalRevenue' => $totalRevenue,
+            'totalRevenueOld' => $totalRevenueOld,
+            'allTimeRevenue' => $allTimeRevenue,
+            'primaryCurrency' => $primaryCurrency,
+            'range' => $range, 
+            'websites' => $websites
+        ]);
     }
 }

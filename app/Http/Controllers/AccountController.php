@@ -19,16 +19,15 @@ use Illuminate\Support\Str;
 
 class AccountController extends Controller
 {
-    use UserTrait;
-
-    /**
+    use UserTrait;    /**
      * Show the Settings index.
      *
      * @param Request $request
      * @return \Illuminate\Contracts\Foundation\Application|\Illuminate\Contracts\View\Factory|\Illuminate\View\View
      */
     public function index(Request $request) {
-        return view('account.container', ['view' => 'index', 'user' => $request->user()]);
+        // Show profile by default instead of card-based index
+        return view('account.container', ['view' => 'profile', 'user' => $request->user()]);
     }
 
     /**

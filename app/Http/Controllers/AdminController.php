@@ -34,9 +34,7 @@ use Illuminate\Support\Str;
 
 class AdminController extends Controller
 {
-    use UserTrait, WebsiteTrait;
-
-    /**
+    use UserTrait, WebsiteTrait;    /**
      * Show the Dashboard.
      *
      * @param Request $request
@@ -61,19 +59,20 @@ class AdminController extends Controller
         }
 
         return view('admin.dashboard.index', ['stats' => $stats, 'users' => $users, 'payments' => $payments, 'websites' => $websites]);
-    }
-
-    /**
+    }    /**
      * Show the Settings forms.
      *
      * @param Request $request
      * @param $id
      * @return \Illuminate\Contracts\Foundation\Application|\Illuminate\Contracts\View\Factory|\Illuminate\View\View|void
-     */
-    public function settings(Request $request, $id)
+     */    public function settings(Request $request, $id)
     {
         if (view()->exists('admin.settings.' . $id)) {
-            return view('admin.container', ['view' => 'admin.settings.' . $id]);
+            // Use the container pattern to include the settings view
+            // This ensures proper layout inheritance
+            return view('admin.container', [
+                'view' => 'admin.settings.' . $id
+            ]);
         }
 
         abort(404);

@@ -1,337 +1,176 @@
 @extends('layouts.app')
 
-@section('site_title', formatTitle([__('Dashboard'), config('settings.title')]))
+@section('site_title', formatTitle([__('Websites'), config('settings.title')]))
 
 @section('content')
 <div class="bg-base-1 flex-fill">
-    <div class="bg-base-0">
-        <div class="container py-5">
-            <div class="d-flex">
-                <div class="row no-gutters w-100">
-                    <div class="d-flex col-12 col-md">
-                        <div class="flex-shrink-1">
-                            <a href="{{ route('account') }}" class="d-block"><img src="{{ gravatar(Auth::user()->email, 128) }}" class="rounded-circle width-16 height-16"></a>
-                        </div>
-                        <div class="flex-grow-1 d-flex align-items-center {{ (__('lang_dir') == 'rtl' ? 'mr-3' : 'ml-3') }}">
-                            <div>
-                                <h4 class="font-weight-medium mb-0">{{ Auth::user()->name }}</h4>
-
-                                <div class="d-flex flex-wrap">
-                                    @if(paymentProcessors())
-                                        <div class="d-inline-block mt-2 {{ (__('lang_dir') == 'rtl' ? 'ml-4' : 'mr-4') }}">
-                                            <div class="d-flex">
-                                                <div class="d-inline-flex align-items-center">
-                                                    @include('icons.package', ['class' => 'text-muted fill-current width-4 height-4'])
-                                                </div>
-
-                                                <div class="d-inline-block {{ (__('lang_dir') == 'rtl' ? 'mr-2' : 'ml-2') }}">
-                                                    <a href="{{ route('account.plan') }}" class="text-dark text-decoration-none">{{ Auth::user()->plan->name }}</a>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    @else
-                                        <div class="d-inline-block mt-2 {{ (__('lang_dir') == 'rtl' ? 'ml-4' : 'mr-4') }}">
-                                            <div class="d-flex">
-                                                <div class="d-inline-flex align-items-center">
-                                                    @include('icons.email', ['class' => 'text-muted fill-current width-4 height-4'])
-                                                </div>
-
-                                                <div class="d-inline-block {{ (__('lang_dir') == 'rtl' ? 'mr-2' : 'ml-2') }}">
-                                                    {{ Auth::user()->email }}
-                                                </div>
-                                            </div>
-                                        </div>
-                                    @endif
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    @if(paymentProcessors())
-                        @if(Auth::user()->planOnDefault())
-                            <div class="col-12 col-md-auto d-flex flex-row-reverse align-items-center">
-                                <a href="{{ route('pricing') }}" class="btn btn-outline-primary btn-block d-flex justify-content-center align-items-center mt-3 mt-md-0 {{ (__('lang_dir') == 'rtl' ? 'ml-md-3' : 'mr-md-3') }}">@include('icons.unarchive', ['class' => 'width-4 height-4 fill-current '.(__('lang_dir') == 'rtl' ? 'ml-2' : 'mr-2')]){{ __('Upgrade') }}</a>
-                            </div>
-                        @else
-                            <div class="col-12 col-md-auto d-flex flex-row-reverse align-items-center">
-                                <a href="{{ route('pricing') }}" class="btn btn-outline-primary btn-block d-flex justify-content-center align-items-center mt-3 mt-md-0 {{ (__('lang_dir') == 'rtl' ? 'ml-md-3' : 'mr-md-3') }}">@include('icons.package', ['class' => 'width-4 height-4 fill-current '.(__('lang_dir') == 'rtl' ? 'ml-2' : 'mr-2')]){{ __('Plans') }}</a>
-                            </div>
-                        @endif
-                    @endif
-
-                    <div class="col-12 col-md-auto d-flex flex-row-reverse align-items-center">
-                        <a href="{{ route('websites.new') }}" class="btn btn-primary btn-block d-flex justify-content-center align-items-center mt-3 mt-md-0">@include('icons.add', ['class' => 'width-4 height-4 fill-current '.(__('lang_dir') == 'rtl' ? 'ml-2' : 'mr-2')]){{ __('New website') }}</a>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
     <div class="bg-base-1">
         <div class="container py-3 my-3">
+            <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-3">
+                <h2 class="h4 mb-0">{{ __('Dashboard') }}</h2>
+                <div class="d-flex align-items-center mt-3 mt-md-0">
+                    <div class="dropdown mr-2">
+                        <button class="btn btn-outline-secondary dropdown-toggle d-flex align-items-center" type="button" id="timeframeDropdown" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                            @include('icons.date-range', ['class' => 'fill-current width-4 height-4 '.(__('lang_dir') == 'rtl' ? 'ml-2' : 'mr-2')])                            <span>
+                                @if(safeCreateFromFormat($range['from'])->isToday() && safeCreateFromFormat($range['to'])->isToday())
+                                    {{ __('Today') }}
+                                @elseif(safeCreateFromFormat($range['from'])->format('Y-m-d') == \Carbon\Carbon::now()->subDays(6)->format('Y-m-d') && safeCreateFromFormat($range['to'])->format('Y-m-d') == \Carbon\Carbon::now()->format('Y-m-d'))
+                                    {{ __('Last :days days', ['days' => 7]) }}
+                                @elseif(safeCreateFromFormat($range['from'])->format('Y-m-d') == \Carbon\Carbon::now()->subDays(29)->format('Y-m-d') && safeCreateFromFormat($range['to'])->format('Y-m-d') == \Carbon\Carbon::now()->format('Y-m-d'))
+                                    {{ __('Last :days days', ['days' => 30]) }}
+                                @elseif(safeCreateFromFormat($range['from'])->format('Y-m-d') == Auth::user()->created_at->format('Y-m-d') && safeCreateFromFormat($range['to'])->format('Y-m-d') == \Carbon\Carbon::now()->format('Y-m-d'))
+                                    {{ __('Total') }}
+                                @else
+                                    {{ safeCreateFromFormat($range['from'])->format(__('M d, Y')) }} - {{ safeCreateFromFormat($range['to'])->format(__('M d, Y')) }}
+                                @endif
+                            </span>
+                        </button>                        <div class="dropdown-menu dropdown-menu-right" aria-labelledby="timeframeDropdown">
+                            <a class="dropdown-item @if(safeCreateFromFormat($range['from'])->isToday()) active @endif" href="{{ route('dashboard', ['from' => \Carbon\Carbon::now()->format('Y-m-d'), 'to' => \Carbon\Carbon::now()->format('Y-m-d')]) }}">{{ __('Today') }}</a>
+                            <a class="dropdown-item @if(safeCreateFromFormat($range['from'])->format('Y-m-d') == \Carbon\Carbon::now()->subDays(6)->format('Y-m-d') && safeCreateFromFormat($range['to'])->format('Y-m-d') == \Carbon\Carbon::now()->format('Y-m-d')) active @endif" href="{{ route('dashboard', ['from' => \Carbon\Carbon::now()->subDays(6)->format('Y-m-d'), 'to' => \Carbon\Carbon::now()->format('Y-m-d')]) }}">{{ __('Last :days days', ['days' => 7]) }}</a>
+                            <a class="dropdown-item @if(safeCreateFromFormat($range['from'])->format('Y-m-d') == \Carbon\Carbon::now()->subDays(29)->format('Y-m-d') && safeCreateFromFormat($range['to'])->format('Y-m-d') == \Carbon\Carbon::now()->format('Y-m-d')) active @endif" href="{{ route('dashboard', ['from' => \Carbon\Carbon::now()->subDays(29)->format('Y-m-d'), 'to' => \Carbon\Carbon::now()->format('Y-m-d')]) }}">{{ __('Last :days days', ['days' => 30]) }}</a>
+                            <a class="dropdown-item @if(safeCreateFromFormat($range['from'])->format('Y-m-d') == Auth::user()->created_at->format('Y-m-d') && safeCreateFromFormat($range['to'])->format('Y-m-d') == \Carbon\Carbon::now()->format('Y-m-d')) active @endif" href="{{ route('dashboard', ['from' => Auth::user()->created_at->format('Y-m-d'), 'to' => \Carbon\Carbon::now()->format('Y-m-d')]) }}">{{ __('Total') }}</a>
+                        </div>
+                    </div>
+                    
+                    <a href="{{ route('websites.new') }}" class="btn btn-primary d-flex justify-content-center align-items-center">@include('icons.add', ['class' => 'width-4 height-4 fill-current '.(__('lang_dir') == 'rtl' ? 'ml-2' : 'mr-2')]){{ __('New website') }}</a>
+                </div>
+            </div>
+            
             <div class="mb-5">
-                <div class="row">
-                    <div class="col-12 col-lg">
-                        <h4 class="mb-0">{{ __('Overview') }}</h4>
-                    </div>
-                    <div class="col-12 col-lg-auto mt-3 mt-lg-0">
-                        <ul class="nav nav-pills small">
-                            <li class="nav-item">
-                                <a href="{{ route('dashboard', ['from' => \Carbon\Carbon::now()->format('Y-m-d'), 'to' => \Carbon\Carbon::now()->format('Y-m-d')]) }}" class="nav-link py-1 px-2 @if(\Carbon\Carbon::createFromFormat('Y-m-d', $range['from'])->isToday()) active @endif" href="#">{{ __('Today') }}</a>
-                            </li>
-                            <li class="nav-item">
-                                <a href="{{ route('dashboard', ['from' => \Carbon\Carbon::now()->subDays(6)->format('Y-m-d'), 'to' => \Carbon\Carbon::now()->format('Y-m-d')]) }}" class="nav-link py-1 px-2 @if(\Carbon\Carbon::createFromFormat('Y-m-d', $range['from'])->format('Y-m-d') == \Carbon\Carbon::now()->subDays(6)->format('Y-m-d') && \Carbon\Carbon::createFromFormat('Y-m-d', $range['to'])->format('Y-m-d') == \Carbon\Carbon::now()->format('Y-m-d')) active @endif" href="#">{{ __('Last :days days', ['days' => 7]) }}</a>
-                            </li>
-                            <li class="nav-item">
-                                <a href="{{ route('dashboard', ['from' => \Carbon\Carbon::now()->subDays(29)->format('Y-m-d'), 'to' => \Carbon\Carbon::now()->format('Y-m-d')]) }}" class="nav-link py-1 px-2 @if(\Carbon\Carbon::createFromFormat('Y-m-d', $range['from'])->format('Y-m-d') == \Carbon\Carbon::now()->subDays(29)->format('Y-m-d') && \Carbon\Carbon::createFromFormat('Y-m-d', $range['to'])->format('Y-m-d') == \Carbon\Carbon::now()->format('Y-m-d')) active @endif" href="#">{{ __('Last :days days', ['days' => 30]) }}</a>
-                            </li>
-                            <li class="nav-item">
-                                <a href="{{ route('dashboard', ['from' => Auth::user()->created_at->format('Y-m-d'), 'to' => \Carbon\Carbon::now()->format('Y-m-d')]) }}" class="nav-link py-1 px-2 @if(\Carbon\Carbon::createFromFormat('Y-m-d', $range['from'])->format('Y-m-d') == Auth::user()->created_at->format('Y-m-d') && \Carbon\Carbon::createFromFormat('Y-m-d', $range['to'])->format('Y-m-d') == \Carbon\Carbon::now()->format('Y-m-d')) active @endif" href="#">{{ __('Total') }}</a>
-                            </li>
-                        </ul>
-                    </div>
-                </div>
-
-                <div class="card border-0 rounded-top shadow-sm my-3 overflow-hidden">
-                    <div class="px-3">
-                        <div class="row">
-                            <!-- Title -->
-                            <div class="col-12 col-md-auto d-none d-md-flex align-items-center border-bottom border-bottom-md-0 {{ (__('lang_dir') == 'rtl' ? 'border-left-md' : 'border-right-md') }}">
-                                <div class="px-2 py-4 d-flex">
-                                    <div class="d-flex position-relative text-primary width-10 height-10 align-items-center justify-content-center flex-shrink-0">
-                                        <div class="position-absolute bg-primary opacity-10 top-0 right-0 bottom-0 left-0 border-radius-xl"></div>
-                                        @include('icons.assesment', ['class' => 'fill-current width-5 height-5'])
+               <div class="row my-3">                    <!-- Visitors Card -->                    <div class="col-12 col-md-6 mb-3">
+                        <div class="card border shadow-sm h-100">
+                            <div class="card-body p-4">
+                                <div class="d-flex align-items-center mb-3">                                    <div class="mr-4 d-flex align-items-center justify-content-center bg-primary rounded" style="min-width: 90px; min-height: 90px; width: 90px; height: 90px; position: relative;">
+                                        <div style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; background-color: rgba(0,123,255,0.2); border-radius: 0.25rem;"></div>
+                                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" style="width: 56px; height: 56px; position: relative; z-index: 1; fill: white;">
+                                            <path d="M0 0h24v24H0z" fill="none"/>
+                                            <path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/>
+                                        </svg>
+                                    </div>
+                                    <div class="d-flex flex-column">
+                                        <div class="font-weight-medium text-dark mb-2" style="font-size: 1.1rem;">{{ __('Visitors') }}</div>
+                                        <div class="d-flex align-items-center">
+                                            <div class="h1 font-weight-bold mb-0" style="line-height: 1;">{{ number_format($visitors, 0, __('.'), __(',')) }}</div>
+                                            @if(isset($visitorsOld) && $visitorsOld > 0)
+                                                @php 
+                                                    $change = ($visitors - $visitorsOld) / $visitorsOld * 100;
+                                                @endphp
+                                                <span class="badge {{ $change >= 0 ? 'badge-success' : 'badge-danger' }} ml-3">
+                                                    {{ $change >= 0 ? '+' : '' }}{{ number_format($change, 1) }}%
+                                                </span>
+                                            @else
+                                                <span class="text-muted ml-3">{{ __('No prior data') }}</span>
+                                            @endif
+                                        </div>
                                     </div>
                                 </div>
+                                <p class="text-muted mb-0">{{ __('A visitor represents a page load of your website through direct access, or through a referrer.') }}</p>
                             </div>
-
-                            <div class="col-12 col-md">
-                                <div class="row">
-                                    <!-- Visitors -->
-                                    <div class="col-12 col-md-6 border-bottom border-bottom-md-0 {{ (__('lang_dir') == 'rtl' ? 'border-left-md' : 'border-right-md') }}">
-                                        <div class="px-2 py-4">
-                                            <div class="d-flex">
-                                                <div class="text-truncate {{ (__('lang_dir') == 'rtl' ? 'ml-2' : 'mr-2') }}">
-                                                    <div class="d-flex align-items-center text-truncate">
-                                                        <div class="d-flex align-items-center justify-content-center bg-primary rounded width-4 height-4 flex-shrink-0 {{ (__('lang_dir') == 'rtl' ? 'ml-2' : 'mr-2') }}"></div>
-
-                                                        <div class="flex-grow-1 d-flex font-weight-bold text-truncate">
-                                                            <div class="text-truncate">{{ __('Visitors') }}</div>
-                                                            <div class="flex-shrink-0 d-flex align-items-center mx-2" data-tooltip="true" title="{{ __('A visitor represents a page load of your website through direct access, or through a referrer.') }}">
-                                                                @include('icons.info', ['class' => 'width-4 height-4 fill-current text-muted'])
-                                                            </div>
-                                                        </div>
-                                                    </div>
-
-                                                    @include('stats.growth', ['growthCurrent' => $visitors, 'growthPrevious' => $visitorsOld])
-                                                </div>
-
-                                                <div class="d-flex align-items-center {{ (__('lang_dir') == 'rtl' ? 'mr-auto' : 'ml-auto') }}">
-                                                    <div class="h2 font-weight-bold mb-0">{{ number_format($visitors, 0, __('.'), __(',')) }}</div>
-                                                </div>
-                                            </div>
-                                        </div>
+                        </div>
+                    </div>                      <!-- Total Revenue Card -->                    <div class="col-12 col-md-6 mb-3">
+                        <div class="card border shadow-sm h-100">
+                            <div class="card-body p-4">
+                                <div class="d-flex align-items-center mb-3">                                    <div class="mr-4 d-flex align-items-center justify-content-center bg-success rounded" style="min-width: 90px; min-height: 90px; width: 90px; height: 90px; position: relative;">
+                                        <div style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; background-color: rgba(40,167,69,0.2); border-radius: 0.25rem;"></div>
+                                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" style="width: 56px; height: 56px; position: relative; z-index: 1; fill: white;">
+                                            <path d="M0 0h24v24H0z" fill="none"/>
+                                            <path d="M11.8 10.9c-2.27-.59-3-1.2-3-2.15 0-1.09 1.01-1.85 2.7-1.85 1.78 0 2.44.85 2.5 2.1h2.21c-.07-1.72-1.12-3.3-3.21-3.81V3h-3v2.16c-1.94.42-3.5 1.68-3.5 3.61 0 2.31 1.91 3.46 4.7 4.13 2.5.6 3 1.48 3 2.41 0 .69-.49 1.79-2.7 1.79-2.06 0-2.87-.92-2.98-2.1h-2.2c.12 2.19 1.76 3.42 3.68 3.83V21h3v-2.15c1.95-.37 3.5-1.5 3.5-3.55 0-2.84-2.43-3.81-4.7-4.4z"/>
+                                        </svg>
                                     </div>
-
-                                    <!-- Pageviews -->
-                                    <div class="col-12 col-md-6">
-                                        <div class="px-2 py-4">
-                                            <div class="d-flex">
-                                                <div class="text-truncate {{ (__('lang_dir') == 'rtl' ? 'ml-2' : 'mr-2') }}">
-                                                    <div class="d-flex align-items-center text-truncate">
-                                                        <div class="d-flex align-items-center justify-content-center bg-danger rounded width-4 height-4 flex-shrink-0 {{ (__('lang_dir') == 'rtl' ? 'ml-2' : 'mr-2') }}"></div>
-
-                                                        <div class="flex-grow-1 d-flex font-weight-bold text-truncate">
-                                                            <div class="text-truncate">{{ __('Pageviews') }}</div>
-                                                            <div class="flex-shrink-0 d-flex align-items-center mx-2" data-tooltip="true" title="{{ __('A pageview represents a page load of your website.') }}">
-                                                                @include('icons.info', ['class' => 'width-4 height-4 fill-current text-muted'])
-                                                            </div>
-                                                        </div>
-                                                    </div>
-
-                                                    @include('stats.growth', ['growthCurrent' => $pageviews, 'growthPrevious' => $pageviewsOld])
-                                                </div>
-
-                                                <div class="d-flex align-items-center {{ (__('lang_dir') == 'rtl' ? 'mr-auto' : 'ml-auto') }}">
-                                                    <div class="h2 font-weight-bold mb-0">{{ number_format($pageviews, 0, __('.'), __(',')) }}</div>
-                                                </div>
-                                            </div>
+                                    <div class="d-flex flex-column">
+                                        <div class="font-weight-medium text-dark mb-2" style="font-size: 1.1rem;">{{ __('Total Revenue') }}</div>
+                                        <div class="d-flex align-items-center">
+                                            <div class="h1 font-weight-bold mb-0" style="line-height: 1;">{{ number_format($totalRevenue, 2, __('.'), __(',')) }} {{ $primaryCurrency }}</div>
+                                            @if(isset($totalRevenueOld) && $totalRevenueOld > 0)
+                                                @php 
+                                                    $change = ($totalRevenue - $totalRevenueOld) / $totalRevenueOld * 100;
+                                                @endphp
+                                                <span class="badge {{ $change >= 0 ? 'badge-success' : 'badge-danger' }} ml-3">
+                                                    {{ $change >= 0 ? '+' : '' }}{{ number_format($change, 1) }}%
+                                                </span>
+                                            @else
+                                                <span class="text-muted ml-3">{{ __('No prior data') }}</span>
+                                            @endif
                                         </div>
                                     </div>
                                 </div>
+                                <p class="text-muted mb-0">{{ __('The total revenue from all your websites.') }}</p>
                             </div>
                         </div>
                     </div>
                 </div>
             </div>
+            
+            <h4 class="mb-3">{{ __('Websites') }}</h4>
+            
+            @include('shared.message')
 
-            <h4 class="mb-0">{{ __('Activity') }}</h4>
-
-            <div class="row">
-                <div class="col-12 mt-3">
-                    <div class="card border-0 shadow-sm">
-                        <div class="card-header">
-                            <div class="row">
-                                <div class="col"><div class="font-weight-medium py-1">{{ __('Websites') }}</div></div>
-                                <div class="col-auto">
-                                    <form method="GET" action="{{ route('dashboard') }}">
-                                        <div class="input-group input-group-sm">
-                                            <input class="form-control" name="search" placeholder="{{ __('Search') }}" value="{{ app('request')->input('search') }}">
-                                            <div class="input-group-append">
-                                                <button type="button" class="btn btn-outline-primary d-flex align-items-center dropdown-toggle dropdown-toggle-split reset-after" data-tooltip="true" title="{{ __('Filters') }}" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">@include('icons.filter', ['class' => 'fill-current width-4 height-4'])&#8203;</button>
-                                                <div class="dropdown-menu {{ (__('lang_dir') == 'rtl' ? 'dropdown-menu' : 'dropdown-menu-right') }} border-0 shadow width-64 p-0" id="search-filters">
-                                                    <div class="dropdown-header py-3">
-                                                        <div class="row">
-                                                            <div class="col"><div class="font-weight-medium m-0 text-body">{{ __('Filters') }}</div></div>
-                                                            <div class="col-auto">
-                                                                @if(request()->input('per_page'))
-                                                                    <a href="{{ route('dashboard') }}" class="text-secondary">{{ __('Reset') }}</a>
-                                                                @endif
-                                                            </div>
-                                                        </div>
-                                                    </div>
-
-                                                    <div class="dropdown-divider my-0"></div>
-
-                                                    <div class="max-height-96 overflow-auto pt-3">
-                                                        <div class="form-group px-4">
-                                                            <label for="i-search-by" class="small">{{ __('Search by') }}</label>
-                                                            <select name="search_by" id="i-search-by" class="custom-select custom-select-sm">
-                                                                @foreach(['domain' => __('Domain')] as $key => $value)
-                                                                    <option value="{{ $key }}" @if(request()->input('search_by') == $key || !request()->input('search_by') && $key == 'name') selected @endif>{{ $value }}</option>
-                                                                @endforeach
-                                                            </select>
-                                                        </div>
-
-                                                        <div class="form-group px-4">
-                                                            <label for="i-sort-by" class="small">{{ __('Sort by') }}</label>
-                                                            <select name="sort_by" id="i-sort-by" class="custom-select custom-select-sm">
-                                                                @foreach(['id' => __('Date created'), 'domain' => __('Domain')] as $key => $value)
-                                                                    <option value="{{ $key }}" @if(request()->input('sort_by') == $key) selected @endif>{{ $value }}</option>
-                                                                @endforeach
-                                                            </select>
-                                                        </div>
-
-                                                        <div class="form-group px-4">
-                                                            <label for="i-sort" class="small">{{ __('Sort') }}</label>
-                                                            <select name="sort" id="i-sort" class="custom-select custom-select-sm">
-                                                                @foreach(['desc' => __('Descending'), 'asc' => __('Ascending')] as $key => $value)
-                                                                    <option value="{{ $key }}" @if(request()->input('sort') == $key) selected @endif>{{ $value }}</option>
-                                                                @endforeach
-                                                            </select>
-                                                        </div>
-
-                                                        <div class="form-group px-4">
-                                                            <label for="i-per-page" class="small">{{ __('Results per page') }}</label>
-                                                            <select name="per_page" id="i-per-page" class="custom-select custom-select-sm">
-                                                                @foreach([10, 25, 50, 100] as $value)
-                                                                    <option value="{{ $value }}" @if(request()->input('per_page') == $value || request()->input('per_page') == null && $value == config('settings.paginate')) selected @endif>{{ $value }}</option>
-                                                                @endforeach
-                                                            </select>
-                                                        </div>
-                                                    </div>
-
-                                                    <div class="dropdown-divider my-0"></div>
-
-                                                    <div class="px-4 py-3">
-                                                        <button type="submit" class="btn btn-primary btn-sm btn-block">{{ __('Search') }}</button>
-                                                    </div>
-                                                </div>
+            @if(count($websites) == 0)
+                <div class="text-center mt-5">
+                    <div class="h4 font-weight-normal text-muted mb-4">{{ __('No websites yet') }}</div>
+                    <a href="{{ route('websites.new') }}" class="btn btn-primary">{{ __('Add your first website') }}</a>
+                </div>
+            @else                <div class="row">
+                    @foreach($websites as $website)
+                        <div class="col-12 col-md-6 col-lg-4 mb-3">
+                            <div class="card border shadow-sm h-100">
+                                <div class="card-body">
+                                    <div class="d-flex mb-3">
+                                        <div class="d-flex align-items-center">
+                                            <div class="rounded p-2 mr-3" style="background-color: #f8f9fa;">
+                                                <img src="https://icons.duckduckgo.com/ip3/{{ $website->domain }}.ico" rel="noreferrer" class="width-8 height-8">
+                                            </div>
+                                            <div>
+                                                <h5 class="card-title mb-0">
+                                                    <a href="{{ route('stats.overview', ['id' => $website->domain, 'from' => $range['from'], 'to' => $range['to']]) }}" class="text-dark font-weight-bold" dir="ltr">{{ $website->domain }}</a>
+                                                </h5>
                                             </div>
                                         </div>
-                                    </form>
+                                        <div class="ml-auto">
+                                            @include('websites.partials.menu')
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="row mt-3">                                        <!-- Visitors -->
+                                        <div class="col-6">
+                                            <div class="d-flex align-items-center mb-1">                                                <div class="d-flex align-items-center justify-content-center bg-primary rounded width-4 height-4 flex-shrink-0 {{ (__('lang_dir') == 'rtl' ? 'ml-2' : 'mr-2') }}" style="position: relative;">
+                                                    <div style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; background-color: rgba(0,123,255,0.2); border-radius: 0.25rem;"></div>
+                                                </div>
+                                                <div class="text-muted font-weight-medium">{{ __('Visitors') }}</div>
+                                            </div>
+                                            <div class="h5 mb-0 font-weight-bold">{{ number_format($website->visitors->sum('count') ?? 0, 0, __('.'), __(',')) }}</div>
+                                        </div>                                        <!-- Revenue -->
+                                        <div class="col-6">
+                                            <div class="d-flex align-items-center mb-1">                                                <div class="d-flex align-items-center justify-content-center bg-success rounded width-4 height-4 flex-shrink-0 {{ (__('lang_dir') == 'rtl' ? 'ml-2' : 'mr-2') }}" style="position: relative;">
+                                                    <div style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; background-color: rgba(40,167,69,0.2); border-radius: 0.25rem;"></div>
+                                                </div>
+                                                <div class="text-muted font-weight-medium">{{ __('Revenue') }}</div>
+                                            </div>
+                                            <div class="h5 mb-0 font-weight-bold">{{ number_format($website->revenue->sum('amount') ?? 0, 2, __('.'), __(',')) }} {{ $primaryCurrency }}</div>
+                                        </div>
+                                    </div>                                </div>                                <div class="card-footer bg-base-0 d-flex justify-content-between align-items-center">
+                                    <a href="{{ route('stats.overview', ['id' => $website->domain, 'from' => $range['from'], 'to' => $range['to']]) }}" class="btn btn-sm btn-primary">{{ __('View stats') }}</a>
                                 </div>
                             </div>
                         </div>
-                        <div class="card-body">
-                            @include('shared.message')
-
-                            @if(count($websites) == 0)
-                                {{ __('No data') }}.
-                            @else
-                                <div class="list-group list-group-flush my-n3">
-                                    <div class="list-group-item px-0 text-muted">
-                                        <div class="row d-flex align-items-center">
-                                            <div class="col">
-                                                <div class="row align-items-center">
-                                                    <div class="col-12 col-lg-4 text-truncate">
-                                                        {{ __('Domain') }}
-                                                    </div>
-
-                                                    <div class="col-12 col-lg-4 text-truncate">
-                                                        {{ __('Visitors') }}
-                                                    </div>
-
-                                                    <div class="col-12 col-lg-4 text-truncate">
-                                                        {{ __('Pageviews') }}
-                                                    </div>
-                                                </div>
-                                            </div>
-                                            <div class="col-auto">
-                                                <div class="form-row">
-                                                    <div class="col">
-                                                        <div class="invisible btn d-flex align-items-center btn-sm text-primary">@include('icons.more-horiz', ['class' => 'fill-current width-4 height-4'])&#8203;</div>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    @foreach($websites as $website)
-                                        <div class="list-group-item px-0">
-                                            <div class="row d-flex align-items-center">
-                                                <div class="col text-truncate">
-                                                    <div class="row text-truncate">
-                                                        <div class="col-12 col-lg-4 d-flex align-items-center text-truncate">
-                                                            <img src="https://icons.duckduckgo.com/ip3/{{ $website->domain }}.ico" rel="noreferrer" class="width-4 height-4 {{ (__('lang_dir') == 'rtl' ? 'ml-3' : 'mr-3') }}"> <div class="text-truncate" dir="ltr"><a href="{{ route('stats.overview', ['id' => $website->domain, 'from' => $range['from'], 'to' => $range['to']]) }}">{{ $website->domain }}</a></div>
-                                                        </div>
-
-                                                        <div class="col-12 col-lg-4 d-flex align-items-center font-weight-medium">
-                                                            <div class="d-flex align-items-center text-truncate">
-                                                                <div class="d-flex align-items-center justify-content-center bg-primary rounded width-4 height-4 flex-shrink-0 text-truncate {{ (__('lang_dir') == 'rtl' ? 'ml-2' : 'mr-2') }}"></div>
-                                                                <div class="text-truncate">{{ number_format($website->visitors->sum('count') ?? 0, 0, __('.'), __(',')) }}</div>
-                                                            </div>
-                                                        </div>
-
-                                                        <div class="col-12 col-lg-4 d-flex align-items-center font-weight-medium">
-                                                            <div class="d-flex align-items-center text-truncate">
-                                                                <div class="d-flex align-items-center justify-content-center bg-danger rounded width-4 height-4 flex-shrink-0 text-truncate {{ (__('lang_dir') == 'rtl' ? 'ml-2' : 'mr-2') }}"></div>
-                                                                <div class="text-truncate">{{ number_format($website->pageviews->sum('count') ?? 0, 0, __('.'), __(',')) }}</div>
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                                <div class="col-auto">
-                                                    <div class="form-row">
-                                                        <div class="col">
-                                                            @include('websites.partials.menu')
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    @endforeach
-
-                                    <div class="mt-3 align-items-center">
-                                        <div class="row">
-                                            <div class="col">
-                                                <div class="mt-2 mb-3">{{ __('Showing :from-:to of :total', ['from' => $websites->firstItem(), 'to' => $websites->lastItem(), 'total' => $websites->total()]) }}
-                                                </div>
-                                            </div>
-                                            <div class="col-auto">
-                                                {{ $websites->onEachSide(1)->links() }}
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            @endif
+                    @endforeach
+                </div>
+                
+                @if($websites->hasPages())
+                <div class="mt-3 align-items-center">
+                    <div class="row">
+                        <div class="col">
+                            <div class="mt-2 mb-3">{{ __('Showing :from-:to of :total', ['from' => $websites->firstItem(), 'to' => $websites->lastItem(), 'total' => $websites->total()]) }}
+                            </div>
+                        </div>
+                        <div class="col-auto">
+                            {{ $websites->onEachSide(1)->links() }}
                         </div>
                     </div>
                 </div>
-            </div>
+                @endif
+            @endif
         </div>
     </div>
 </div>
 @endsection
-
-@include('shared.sidebars.user')

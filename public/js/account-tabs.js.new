@@ -1,0 +1,49 @@
+// Updated Account tabs interface for horizontal navigation
+document.addEventListener('DOMContentLoaded', function() {
+    // If we're on the account page
+    if (document.getElementById('account-tabs')) {
+        // Ensure proper tab initialization and layout
+        $('.nav-link[data-toggle="tab"]').on('shown.bs.tab', function (e) {
+            // Update URL hash for direct linking
+            window.location.hash = e.target.hash;
+            
+            // On mobile, scroll the active tab into view
+            if (window.innerWidth < 992) {
+                e.target.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+            }
+        });
+        
+        // If there's a hash in the URL, activate that tab
+        if (window.location.hash) {
+            $('a[href="' + window.location.hash + '"]').tab('show');
+        }
+        
+        // Handle navigation on small screens - make pills responsive
+        const handleResponsiveNav = () => {
+            const pills = document.querySelectorAll('#account-tabs .nav-link');
+            
+            if (window.innerWidth < 768) {
+                pills.forEach(pill => {
+                    const icon = pill.querySelector('svg');
+                    const text = pill.querySelector('.d-flex').textContent.trim();
+                    
+                    // Add tooltips on small screens
+                    if (!pill.getAttribute('title')) {
+                        pill.setAttribute('title', text);
+                        $(pill).tooltip();
+                    }
+                });
+            } else {
+                pills.forEach(pill => {
+                    // Remove tooltips on larger screens
+                    $(pill).tooltip('dispose');
+                    pill.removeAttribute('title');
+                });
+            }
+        };
+        
+        // Call initially and on resize
+        handleResponsiveNav();
+        window.addEventListener('resize', handleResponsiveNav);
+    }
+});

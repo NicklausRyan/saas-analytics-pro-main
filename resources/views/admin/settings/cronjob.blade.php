@@ -1,4 +1,5 @@
-@section('site_title', formatTitle([__('Cron job'), __('Settings'), config('settings.title')]))
+{{-- Removed @section('site_title') to avoid section nesting issues --}}
+<!-- site_title: formatTitle([__('Cron job'), __('Settings'), config('settings.title')]) -->
 
 @include('shared.breadcrumbs', ['breadcrumbs' => [
     ['url' => route('admin.dashboard'), 'title' => __('Admin')],

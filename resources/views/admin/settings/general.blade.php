@@ -1,4 +1,4 @@
-@section('site_title', formatTitle([__('General'), __('Settings'), config('settings.title')]))
+{{-- This view is loaded via admin.container which handles the layout --}}
 
 @include('shared.breadcrumbs', ['breadcrumbs' => [
     ['url' => route('admin.dashboard'), 'title' => __('Admin')],
@@ -97,10 +97,10 @@
                         <strong>{{ $errors->first('custom_js') }}</strong>
                     </span>
                 @endif
-            </div>
-
-            <button type="submit" name="submit" class="btn btn-primary">{{ __('Save') }}</button>
+            </div>            <button type="submit" name="submit" class="btn btn-primary">{{ __('Save') }}</button>
         </form>
 
     </div>
 </div>
+
+@include('admin.shared.footer')

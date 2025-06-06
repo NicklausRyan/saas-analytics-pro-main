@@ -1,161 +1,167 @@
 @section('site_title', formatTitle([$website->domain, __('Pages'), config('settings.title')]))
 
-<!-- Trending card -->
-<div class="card border-0 shadow-sm p-0 mb-3">
-    <div class="px-3">
-        <div class="row">
-            <!-- Title -->
-            <div class="col-12 col-md-auto d-none d-xl-flex align-items-center border-bottom border-bottom-md-0 {{ (__('lang_dir') == 'rtl' ? 'border-left-md' : 'border-right-md') }}">
-                <div class="px-2 py-4 d-flex">
-                    <div class="d-flex position-relative text-primary width-10 height-10 align-items-center justify-content-center flex-shrink-0">
-                        <div class="position-absolute bg-primary opacity-10 top-0 right-0 bottom-0 left-0 border-radius-xl"></div>
-                        @include('icons.description', ['class' => 'fill-current width-5 height-5'])
-                    </div>
+<div class="row m-n2">
+    <!-- Most Popular Card -->    <div class="col-12 col-lg-6 p-3">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-body py-4">
+                <div class="d-flex align-items-center text-truncate">
+                    @if(isset($first->value))
+                        <div class="flex-grow-1 font-weight-bold text-truncate {{ (__('lang_dir') == 'rtl' ? 'ml-2' : 'mr-2') }}">
+                            @if($first->value)
+                                <div class="text-truncate" dir="ltr">{{ $first->value }}</div>
+                            @else
+                                {{ __('Unknown') }}
+                            @endif
+                        </div>
+                    @else
+                        <div class="flex-grow-1 font-weight-bold text-truncate {{ (__('lang_dir') == 'rtl' ? 'ml-2' : 'mr-2') }}">{{ __('No data') }}</div>
+                    @endif
+
+                    <div class="align-self-end">{{ (isset($first->count) ? number_format($first->count, 0, __('.'), __(',')) : '—') }}</div>
+                </div>
+                <div class="d-flex align-items-center text-truncate text-success">
+                    <div class="flex-grow-1 text-truncate {{ (__('lang_dir') == 'rtl' ? 'ml-2' : 'mr-2') }}">{{ mb_strtolower(__('Most popular')) }}</div>
+                    <div>{{ (isset($first->count) ? number_format((($first->count / $total->count) * 100), 1, __('.'), __(',')).'%' : '—') }}</div>
                 </div>
             </div>
-
-            <div class="col-12 col-md text-truncate">
-                <div class="row">
-                    <!-- Trending up -->
-                    <div class="col-12 col-md-6 border-bottom border-bottom-md-0 {{ (__('lang_dir') == 'rtl' ? 'border-left-md' : 'border-right-md')  }}">
-                        <div class="px-2 py-4">
-                            <div class="row">
-                                <div class="col">
-                                    <div class="d-flex align-items-center text-truncate">
-                                        @if(isset($first->value))
-                                            <div class="d-flex flex-grow-1 font-weight-bold text-truncate {{ (__('lang_dir') == 'rtl' ? 'ml-2' : 'mr-2') }}">
-                                                @if($first->value)
-                                                    <div class="text-truncate" dir="ltr">{{ $first->value }}</div> <a href="http://{{ $website->domain . $first->value }}" target="_blank" rel="nofollow noreferrer noopener" class="text-secondary d-flex align-items-center {{ (__('lang_dir') == 'rtl' ? 'mr-2' : 'ml-2') }}">@include('icons.open-in-new', ['class' => 'fill-current width-3 height-3'])</a>
-                                                @else
-                                                    {{ __('Unknown') }}
-                                                @endif
-                                            </div>
-                                        @else
-                                            <div class="flex-grow-1 font-weight-bold text-truncate {{ (__('lang_dir') == 'rtl' ? 'ml-2' : 'mr-2') }}">{{ __('No data') }}</div>
-                                        @endif
-
-                                        <div class="align-self-end">{{ (isset($first->count) ? number_format($first->count, 0, __('.'), __(',')) : '—') }}</div>
-                                    </div>
-
-                                    <div class="d-flex align-items-center text-truncate text-success">
-                                        <div class="d-flex align-items-center justify-content-center width-4 height-4 {{ (__('lang_dir') == 'rtl' ? 'ml-2' : 'mr-2') }}">@include('icons.trending-up', ['class' => 'fill-current width-3 height-3'])</div>
-
-                                        <div class="flex-grow-1 text-truncate {{ (__('lang_dir') == 'rtl' ? 'ml-2' : 'mr-2') }}">{{ mb_strtolower(__('Most popular')) }}</div>
-
-                                        <div>{{ (isset($first->count) ? number_format((($first->count / $total->count) * 100), 1, __('.'), __(',')).'%' : '—') }}</div>
-                                    </div>
-                                </div>
-                            </div>
+        </div>
+    </div>    <!-- Least Popular Card -->
+    <div class="col-12 col-lg-6 p-3">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-body py-4">
+                <div class="d-flex align-items-center text-truncate">
+                    @if(isset($last->value))
+                        <div class="flex-grow-1 font-weight-bold text-truncate {{ (__('lang_dir') == 'rtl' ? 'ml-2' : 'mr-2') }}">
+                            @if($last->value)
+                                <div class="text-truncate" dir="ltr">{{ $last->value }}</div>
+                            @else
+                                {{ __('Unknown') }}
+                            @endif
                         </div>
-                    </div>
+                    @else
+                        <div class="flex-grow-1 font-weight-bold text-truncate {{ (__('lang_dir') == 'rtl' ? 'ml-2' : 'mr-2') }}">{{ __('No data') }}</div>
+                    @endif
 
-                    <!-- Trending down -->
-                    <div class="col-12 col-md-6">
-                        <div class="px-2 py-4">
-                            <div class="row">
-                                <div class="col">
-                                    <div class="d-flex align-items-center text-truncate">
-                                        @if(isset($last->value))
-                                            <div class="d-flex flex-grow-1 font-weight-bold text-truncate {{ (__('lang_dir') == 'rtl' ? 'ml-2' : 'mr-2') }}">
-                                                @if($last->value)
-                                                    <div class="text-truncate" dir="ltr">{{ $last->value }}</div> <a href="http://{{ $website->domain . $last->value }}" target="_blank" rel="nofollow noreferrer noopener" class="text-secondary d-flex align-items-center {{ (__('lang_dir') == 'rtl' ? 'mr-2' : 'ml-2') }}">@include('icons.open-in-new', ['class' => 'fill-current width-3 height-3'])</a>
-                                                @else
-                                                    {{ __('Unknown') }}
-                                                @endif
-                                            </div>
-                                        @else
-                                            <div class="flex-grow-1 font-weight-bold text-truncate {{ (__('lang_dir') == 'rtl' ? 'ml-2' : 'mr-2') }}">{{ __('No data') }}</div>
-                                        @endif
-
-                                        <div class="align-self-end">{{ (isset($last->count) ? number_format($last->count, 0, __('.'), __(',')) : '—') }}</div>
-                                    </div>
-
-                                    <div class="d-flex align-items-center text-truncate text-danger">
-                                        <div class="d-flex align-items-center justify-content-center width-4 height-4 {{ (__('lang_dir') == 'rtl' ? 'ml-2' : 'mr-2') }}">@include('icons.trending-down', ['class' => 'fill-current width-3 height-3'])</div>
-
-                                        <div class="flex-grow-1 text-truncate {{ (__('lang_dir') == 'rtl' ? 'ml-2' : 'mr-2') }}">{{ mb_strtolower(__('Least popular')) }}</div>
-
-                                        <div>{{ (isset($last->count) ? number_format((($last->count / $total->count) * 100), 1, __('.'), __(',')).'%' : '—') }}</div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
+                    <div class="align-self-end">{{ (isset($last->count) ? number_format($last->count, 0, __('.'), __(',')) : '—') }}</div>
+                </div>
+                <div class="d-flex align-items-center text-truncate text-danger">
+                    <div class="flex-grow-1 text-truncate {{ (__('lang_dir') == 'rtl' ? 'ml-2' : 'mr-2') }}">{{ mb_strtolower(__('Least popular')) }}</div>
+                    <div>{{ (isset($last->count) ? number_format((($last->count / $total->count) * 100), 1, __('.'), __(',')).'%' : '—') }}</div>
                 </div>
             </div>
         </div>
     </div>
 </div>
 
-<div class="d-flex flex-column">
-    <div class="card border-0 shadow-sm">
-        <div class="card-header">
-            <div class="row">
-                <div class="col-12 col-md"><div class="font-weight-medium py-1">{{ __('Pages') }}</div></div>
-                <div class="col-12 col-md-auto">
-                    <div class="form-row">
-                        @include('stats.filters', ['name' => __('URL'), 'count' => __('Pageviews')])
+<div class="row m-n2">
+    <div class="col-12 p-3">
+        <div class="card border-0 shadow-sm">
+            <div class="card-header">
+                <div class="row no-gutters">
+                    <div class="col-12 col-md"><div class="font-weight-medium py-1">{{ __('Pages') }}</div></div>
+                    <div class="col-12 col-md-auto">
+                        <div class="form-row">
+                            @include('stats.filters', ['name' => __('URL'), 'count' => __('Pageviews')])
+                        </div>
                     </div>
                 </div>
-            </div>
-        </div>
-        <div class="card-body">
+            </div><div class="card-body">
             @if(count($pages) == 0)
                 {{ __('No data') }}.
             @else
                 <div class="list-group list-group-flush my-n3">
                     <div class="list-group-item px-0 text-muted">
-                        <div class="row align-items-center">
-                            <div class="col">
-                                {{ __('URL') }}
-                            </div>
-                            <div class="col-auto">
-                                {{ __('Pageviews') }}
-                            </div>
+                        <div class="d-flex align-items-center">
+                            <div style="width: 45%; flex-shrink: 0; padding: 0 12px;">{{ __('URL') }}</div>
+                            <div style="width: 27.5%; flex-shrink: 0; text-align: right; padding: 0 8px;">{{ __('Pageviews') }}</div>
+                            <div style="width: 27.5%; flex-shrink: 0; text-align: right; padding: 0 8px;">{{ __('Revenue') }}</div>
                         </div>
                     </div>
 
                     <div class="list-group-item px-0 small text-muted">
-                        <div class="d-flex flex-column">
-                            <div class="d-flex justify-content-between">
-                                <div class="d-flex text-truncate align-items-center">
-                                    <div class="text-truncate">
-                                        {{ __('Total') }}
-                                    </div>
-                                </div>
-
-                                <div class="d-flex align-items-baseline {{ (__('lang_dir') == 'rtl' ? 'mr-3 text-left' : 'ml-3 text-right') }}">
-                                    <span>{{ number_format($total->count, 0, __('.'), __(',')) }}</span>
-
-                                    <div class="width-16 text-muted {{ (__('lang_dir') == 'rtl' ? 'mr-3' : 'ml-3') }}">
-                                        {{ number_format((($total->count / $total->count) * 100), 1, __('.'), __(',')) }}%
-                                    </div>
-                                </div>
+                        <div class="d-flex align-items-center">
+                            <div style="width: 45%; flex-shrink: 0; padding: 0 12px;">
+                                {{ __('Total') }}
+                            </div>
+                            <div style="width: 27.5%; flex-shrink: 0; text-align: right; padding: 0 8px;">
+                                {{ number_format($total->count, 0, __('.'), __(',')) }}
+                            </div>
+                            <div style="width: 27.5%; flex-shrink: 0; text-align: right; padding: 0 8px;">
+                                {{ isset($primaryCurrency) && $totalRevenue > 0 ? number_format($totalRevenue, 2, __('.'), __(',')) . ' ' . $primaryCurrency : '—' }}
                             </div>
                         </div>
                     </div>
 
                     @foreach($pages as $page)
-                        <div class="list-group-item px-0 border-0">
-                            <div class="d-flex flex-column">
-                                <div class="d-flex justify-content-between mb-2">
+                        @php
+                            $pageRevenue = 0;
+                            $pageRevenuePerVisitor = 0;
+                            
+                            // Always find this page in the revenue data
+                            foreach($revenueByPage as $revenueData) {
+                                if($revenueData['value'] == $page->value) {
+                                    $pageRevenue = $revenueData['revenue'];
+                                    $pageRevenuePerVisitor = $revenueData['revenuePerVisitor'];
+                                    break;
+                                }
+                            }
+                        @endphp
+                        
+                        <div class="list-group-item px-0 border-0 position-relative" style="z-index: 2; margin: 0;">
+                            <div class="d-flex align-items-center position-relative" style="z-index: 3; min-height: 44px;">
+                                <!-- Name Column -->
+                                <div style="width: 45%; flex-shrink: 0; padding: 0 12px;">
                                     <div class="d-flex text-truncate align-items-center">
-                                        <div class="d-flex text-truncate">
-                                            <div class="text-truncate" dir="ltr">{{ $page->value }}</div> <a href="http://{{ $website->domain . $page->value }}" target="_blank" rel="nofollow noreferrer noopener" class="text-secondary d-flex align-items-center {{ (__('lang_dir') == 'rtl' ? 'mr-2' : 'ml-2') }}">@include('icons.open-in-new', ['class' => 'fill-current width-3 height-3'])</a>
-                                        </div>
-                                    </div>
-
-                                    <div class="d-flex align-items-baseline {{ (__('lang_dir') == 'rtl' ? 'mr-3 text-left' : 'ml-3 text-right') }}">
-                                        <span>{{ number_format($page->count, 0, __('.'), __(',')) }}</span>
-
-                                        <div class="width-16 text-muted {{ (__('lang_dir') == 'rtl' ? 'mr-3' : 'ml-3') }}">
-                                            {{ number_format((($page->count / $total->count) * 100), 1, __('.'), __(',')) }}%
-                                        </div>
+                                        <div class="text-truncate" dir="ltr">{{ $page->value }}</div>
+                                        <a href="http://{{ $website->domain . $page->value }}" target="_blank" rel="nofollow noreferrer noopener" class="text-secondary d-flex align-items-center {{ (__('lang_dir') == 'rtl' ? 'mr-2' : 'ml-2') }}">@include('icons.open-in-new', ['class' => 'fill-current width-3 height-3'])</a>
                                     </div>
                                 </div>
-                                <div class="progress height-1.25 w-100">
-                                    <div class="progress-bar bg-danger rounded" role="progressbar" style="width: {{ (($page->count / $total->count) * 100) }}%"></div>
+                                <!-- Pageviews Column -->
+                                <div style="width: 27.5%; flex-shrink: 0; text-align: right; padding: 0 8px;">
+                                    {{ number_format($page->count, 0, __('.'), __(',')) }}
                                 </div>
+                                <!-- Revenue Column -->
+                                <div style="width: 27.5%; flex-shrink: 0; text-align: right; padding: 0 8px;" class="text-{{ $pageRevenue > 0 ? 'success font-weight-medium' : 'muted' }}">
+                                    {{ $pageRevenue ? number_format($pageRevenue, 2, __('.'), __(',')) . ' ' . $primaryCurrency : '-' }}
+                                </div>
+                            </div>
+
+                            <!-- Smart layered progress bars positioned behind content -->
+                            <div class="position-absolute" style="top: 50%; left: 0; width: 50%; height: 32px; transform: translateY(-50%); z-index: 1; pointer-events: none;">
+                                @php
+                                    // Calculate percentages for comparison
+                                    $visitorsPercentage = ($page->count / $total->count) * 100;
+                                    $maxPageRevenue = is_array($revenueByPage) ? 
+                                        max(array_column($revenueByPage, 'revenue')) : 
+                                        collect($revenueByPage)->max('revenue');
+                                    $pageRevenuePercentage = $maxPageRevenue > 0 ? (($pageRevenue / $maxPageRevenue) * 100) : 0;
+                                      
+                                    // Determine which bar is smaller and should be on top
+                                    $visitorsIsSmaller = $visitorsPercentage <= $pageRevenuePercentage;
+                                    $smallerPercentage = $visitorsIsSmaller ? $visitorsPercentage : $pageRevenuePercentage;
+                                    $largerPercentage = $visitorsIsSmaller ? $pageRevenuePercentage : $visitorsPercentage;
+                                      
+                                    // Add spacing between smaller and larger bars
+                                    $spacingGap = 0.5859375;
+                                    $largerBarStartPosition = $smallerPercentage + $spacingGap;
+                                @endphp
+                                  
+                                @if($pageRevenue > 0)
+                                    <!-- Larger bar (background layer) - starts after smaller bar ends with spacing -->
+                                    <div class="position-absolute" style="top: 0; left: {{ $largerBarStartPosition }}%; width: {{ 100 - $largerBarStartPosition }}%; height: 100%; z-index: 1;">
+                                        <div style="background: {{ $visitorsIsSmaller ? 'rgba(40, 167, 69, 0.5); border: 1px solid rgba(40, 167, 69, 0.7)' : 'rgba(54, 162, 235, 0.5); border: 1px solid rgba(54, 162, 235, 0.7)' }}; width: {{ (($largerPercentage - $smallerPercentage) / (100 - $largerBarStartPosition)) * 100 }}%; height: 100%;"></div>
+                                    </div>
+                                    
+                                    <!-- Smaller bar (top layer) - full width from start -->
+                                    <div class="position-absolute" style="top: 0; left: 0; width: 100%; height: 100%; z-index: 2;">
+                                        <div style="background: {{ $visitorsIsSmaller ? 'rgba(54, 162, 235, 0.5); border: 1px solid rgba(54, 162, 235, 0.7)' : 'rgba(40, 167, 69, 0.5); border: 1px solid rgba(40, 167, 69, 0.7)' }}; width: {{ $smallerPercentage }}%; height: 100%;"></div>
+                                    </div>
+                                @else
+                                    <!-- Only visitors bar when no revenue -->
+                                    <div class="position-absolute" style="top: 0; left: 0; width: 100%; height: 100%; z-index: 1;">
+                                        <div style="background: rgba(54, 162, 235, 0.5); border: 1px solid rgba(54, 162, 235, 0.7); width: {{ $visitorsPercentage }}%; height: 100%;"></div>
+                                    </div>
+                                @endif
                             </div>
                         </div>
                     @endforeach

@@ -1,33 +1,19 @@
 @section('site_title', formatTitle([__('Security'), config('settings.title')]))
 
-@include('shared.breadcrumbs', ['breadcrumbs' => [
-    ['url' => route('dashboard'), 'title' => __('Home')],
-    ['url' => route('account'), 'title' => __('Account')],
-    ['title' => __('Security')]
-]])
+{{-- Account Security Content (without wrapper card) --}}
+<ul class="nav nav-pills d-flex flex-fill flex-column flex-md-row mb-3" id="pills-tab" role="tablist">
+    <li class="nav-item flex-grow-1 text-center">
+        <a class="nav-link active" id="pills-registration-tab" data-toggle="pill" href="#pills-registration" role="tab" aria-controls="pills-registration" aria-selected="true">{{ __('Password') }}</a>
+    </li>
 
-<h1 class="h2 mb-3 d-inline-block">{{ __('Security') }}</h1>
+    @if(config('settings.login_tfa'))
+        <li class="nav-item flex-grow-1 text-center">
+            <a class="nav-link" id="pills-tfa-tab" data-toggle="pill" href="#pills-tfa" role="tab" aria-controls="pills-tfa" aria-selected="false">{{ __('Two-factor authentication') }}</a>
+        </li>
+    @endif
+</ul>
 
-<div class="card border-0 shadow-sm">
-    <div class="card-header align-items-center">
-        <div class="row">
-            <div class="col"><div class="font-weight-medium py-1">{{ __('Security') }}</div></div>
-        </div>
-    </div>
-    <div class="card-body">
-        <ul class="nav nav-pills d-flex flex-fill flex-column flex-md-row mb-3" id="pills-tab" role="tablist">
-            <li class="nav-item flex-grow-1 text-center">
-                <a class="nav-link active" id="pills-registration-tab" data-toggle="pill" href="#pills-registration" role="tab" aria-controls="pills-registration" aria-selected="true">{{ __('Password') }}</a>
-            </li>
-
-            @if(config('settings.login_tfa'))
-                <li class="nav-item flex-grow-1 text-center">
-                    <a class="nav-link" id="pills-tfa-tab" data-toggle="pill" href="#pills-tfa" role="tab" aria-controls="pills-tfa" aria-selected="false">{{ __('Two-factor authentication') }}</a>
-                </li>
-            @endif
-        </ul>
-        
-        @include('shared.message')
+@include('shared.message')
 
         <form action="{{ route('account.security') }}" method="post" enctype="multipart/form-data">
             @csrf

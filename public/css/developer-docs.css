@@ -1,0 +1,111 @@
+.developer-sidebar {
+    min-width: 220px;
+    max-width: 220px;
+    height: 100%;
+    transition: all 0.3s;
+    overflow-y: auto;
+    border-right: 1px solid #eaeaea;
+}
+
+.developer-sidebar .nav-link {
+    padding: 0.4rem 0.75rem;
+    color: #666;
+    border-radius: 0.2rem;
+    margin-bottom: 0.2rem;
+    font-size: 0.9rem;
+}
+
+.developer-sidebar .nav-link:hover {
+    background-color: rgba(0, 123, 255, 0.05);
+    color: #007bff;
+}
+
+.developer-sidebar .nav-link.active {
+    background-color: rgba(0, 123, 255, 0.1);
+    color: #007bff;
+    font-weight: 500;
+}
+
+.developer-sidebar .nav-item .sub-nav {
+    padding-left: 1.25rem;
+    display: block;
+    margin-bottom: 16px;
+}
+
+.developer-sidebar .category-label {
+    color: #444;
+    font-weight: 500;
+    padding: 0.5rem 0.75rem;
+    margin-bottom: 0.25rem;
+    display: flex;
+    align-items: center;
+    letter-spacing: 0.5px;
+    font-size: 0.95rem;
+    text-transform: uppercase;
+    border-bottom: 1px solid #eee;
+}
+
+.developer-sidebar .nav-item.active .category-label {
+    color: #007bff;
+}
+
+.developer-sidebar .category-header {
+    font-weight: 600;
+    color: #333;
+    cursor: default;
+}
+
+.developer-sidebar .category-header:hover {
+    background-color: transparent;
+}
+
+.developer-content {
+    flex: 1;
+    padding-left: 2rem;
+    overflow-x: auto;
+    max-width: calc(100% - 220px);
+}
+
+.developer-content pre {
+    white-space: pre-wrap;
+    word-break: break-word;
+    font-size: 0.9rem;
+}
+
+.developer-wrapper {
+    display: flex;
+    background-color: #fafafa;
+    border-radius: 0.25rem;
+    overflow: hidden;
+}
+
+.content-section {
+    display: none; /* Hide all sections by default */
+}
+
+.content-section.active {
+    display: block; /* Only show active section */
+}
+
+@media (max-width: 767.98px) {
+    .developer-sidebar {
+        min-width: 100%;
+        max-width: 100%;
+        margin-bottom: 1.5rem;
+    }
+    
+    .developer-wrapper {
+        flex-direction: column;
+    }
+    
+    .developer-content {
+        padding-left: 0;
+        max-width: 100%;
+        overflow-x: auto;
+    }
+    
+    pre {
+        white-space: pre-wrap;
+        word-break: break-word;
+    }
+}

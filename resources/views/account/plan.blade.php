@@ -1,32 +1,16 @@
 @section('site_title', formatTitle([__('Plan'), config('settings.title')]))
 
-@include('shared.breadcrumbs', ['breadcrumbs' => [
-    ['url' => route('dashboard'), 'title' => __('Home')],
-    ['url' => route('account'), 'title' => __('Account')],
-    ['title' => __('Plan')]
-]])
+@include('shared.message')
 
-<h1 class="h2 mb-3 d-inline-block">{{ __('Plan') }}</h1>
-
-<div class="card border-0 shadow-sm">
-    <div class="card-header align-items-center">
-        <div class="row">
-            <div class="col"><div class="font-weight-medium py-1">{{ __('Plan') }}</div></div>
-            <div class="col-auto">
-                @if(paymentProcessors())
-                    <div class="col-auto">
-                        @if(Auth::user()->planOnDefault())
-                            <a href="{{ route('pricing') }}" class="btn btn-sm btn-outline-primary btn-block d-flex justify-content-center align-items-center">@include('icons.unarchive', ['class' => 'width-4 height-4 fill-current '.(__('lang_dir') == 'rtl' ? 'ml-2' : 'mr-2')]){{ __('Upgrade') }}</a>
-                        @else
-                            <a href="{{ route('pricing') }}" class="btn btn-sm btn-outline-primary btn-block d-flex justify-content-center align-items-center">@include('icons.package', ['class' => 'width-4 height-4 fill-current '.(__('lang_dir') == 'rtl' ? 'ml-2' : 'mr-2')]){{ __('Plans') }}</a>
-                        @endif
-                    </div>
-                @endif
-            </div>
-        </div>
+@if(paymentProcessors())
+    <div class="mb-3">
+        @if(Auth::user()->planOnDefault())
+            <a href="{{ route('pricing') }}" class="btn btn-sm btn-outline-primary d-flex justify-content-center align-items-center">@include('icons.unarchive', ['class' => 'width-4 height-4 fill-current '.(__('lang_dir') == 'rtl' ? 'ml-2' : 'mr-2')]){{ __('Upgrade') }}</a>
+        @else
+            <a href="{{ route('pricing') }}" class="btn btn-sm btn-outline-primary d-flex justify-content-center align-items-center">@include('icons.package', ['class' => 'width-4 height-4 fill-current '.(__('lang_dir') == 'rtl' ? 'ml-2' : 'mr-2')]){{ __('Plans') }}</a>
+        @endif
     </div>
-    <div class="card-body">
-        @include('shared.message')
+@endif
 
         <form action="{{ route('account.plan') }}" method="post" enctype="multipart/form-data">
             @csrf

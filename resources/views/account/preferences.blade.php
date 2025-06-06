@@ -1,13 +1,5 @@
 @section('site_title', formatTitle([__('Preferences'), config('settings.title')]))
 
-@include('shared.breadcrumbs', ['breadcrumbs' => [
-    ['url' => route('dashboard'), 'title' => __('Home')],
-    ['url' => route('account'), 'title' => __('Account')],
-    ['title' => __('Preferences')]
-]])
-
-<div class="d-flex"><h1 class="h2 mb-3 text-break">{{ __('Preferences') }}</h1></div>
-
 <div class="card border-0 shadow-sm">
     <div class="card-header">
         <div class="font-weight-medium py-1">

@@ -1,0 +1,72 @@
+/* Admin sidebar styling */
+.admin-sidebar {
+    background-color: #f8f9fa;
+    border-radius: 0.25rem;
+    overflow: visible;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+}
+
+.admin-sidebar .nav-link {
+    padding: 0.85rem 1.25rem;
+    color: #5a5a5a;
+    border-radius: 0;
+    border-left: 3px solid transparent;
+    font-size: 0.9rem;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+}
+
+.admin-sidebar .nav-link:hover {
+    background-color: rgba(0, 0, 0, 0.03);
+    color: #333;
+}
+
+.admin-sidebar .nav-link.active {
+    background-color: rgba(0, 123, 255, 0.06);
+    color: #007bff;
+    border-left-color: #007bff;
+    font-weight: 500;
+}
+
+.admin-sidebar .nav-link svg {
+    margin-right: 0.75rem;
+    width: 18px;
+    height: 18px;
+    flex-shrink: 0;
+    opacity: 0.8;
+}
+
+.admin-sidebar .sidebar-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.admin-sidebar .nav {
+    padding: 0.5rem 0;
+}
+
+.admin-sidebar .sub-menu {
+    background-color: #efefef;
+}
+
+.admin-sidebar .sub-menu .nav-link {
+    padding-left: 3.25rem;
+    font-size: 0.9rem;
+}
+
+.admin-sidebar .sidebar-expand {
+    transition: transform 0.2s ease;
+}
+
+.admin-sidebar .nav-link[aria-expanded="true"] .sidebar-expand {
+    transform: rotate(180deg);
+}
+
+@media (max-width: 767.98px) {
+    .admin-sidebar {
+        margin-bottom: 1rem;
+        overflow: visible;
+    }
+}

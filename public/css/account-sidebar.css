@@ -1,0 +1,130 @@
+/* Account sidebar styling to match developer docs */
+.side-nav-container {
+    min-width: 220px;
+    max-width: 220px;
+    height: 100%;
+    transition: all 0.3s;
+    overflow-y: auto;
+    border-right: 1px solid #eaeaea;
+}
+
+.side-nav-card {
+    border-radius: 0.25rem;
+    overflow: hidden;
+    box-shadow: none !important;
+    background-color: #fafafa;
+}
+
+.side-nav {
+    background-color: #fafafa;
+    border-radius: 0.25rem;
+    overflow: hidden;
+}
+
+.side-nav .nav-link {
+    padding: 0.4rem 0.75rem;
+    color: #666;
+    border-radius: 0.2rem;
+    margin-bottom: 0.2rem;
+    font-size: 0.9rem;
+    transition: all 0.2s ease-in-out;
+}
+
+.side-nav .nav-link:hover {
+    background-color: rgba(0, 123, 255, 0.05);
+    color: #007bff;
+}
+
+.side-nav .nav-link.active {
+    background-color: rgba(0, 123, 255, 0.1);
+    color: #007bff;
+    font-weight: 500;
+    border-left: none;
+}
+
+.side-nav .category-label {
+    color: #444;
+    font-weight: 500;
+    padding: 0.5rem 0.75rem;
+    margin-bottom: 0.25rem;
+    display: flex;
+    align-items: center;
+    letter-spacing: 0.5px;
+    font-size: 0.95rem;
+    text-transform: uppercase;
+    border-bottom: 1px solid #eee;
+}
+
+.side-nav .nav-item {
+    margin-bottom: 0.5rem;
+}
+
+.side-nav .nav-item.active .category-label {
+    color: #007bff;
+}
+
+.side-nav .sub-nav {
+    padding-left: 1.25rem;
+    display: block;
+    margin-bottom: 16px;
+}
+
+.side-nav .nav-link div {
+    font-weight: normal;
+    display: flex;
+    align-items: center;
+}
+
+.side-nav .nav-link.active div {
+    font-weight: 500;
+}
+
+/* Account content area styling */
+.account-content {
+    flex: 1;
+    padding-left: 2rem;
+    overflow-x: auto;
+    max-width: calc(100% - 220px);
+}
+
+.account-wrapper {
+    display: flex;
+    background-color: #fafafa;
+    border-radius: 0.25rem;
+    overflow: hidden;
+}
+
+/* Tab content */
+#account-tabs-content .tab-pane {
+    display: none;
+}
+
+#account-tabs-content .tab-pane.active {
+    display: block;
+}
+
+/* Card styling to match developer docs */
+.account-content .card-header {
+    border-bottom: 1px solid rgba(0,0,0,0.05) !important;
+}
+
+.account-content .card {
+    box-shadow: 0 0.125rem 0.25rem rgba(0,0,0,0.075) !important;
+}
+
+@media (max-width: 767.98px) {
+    .side-nav-container {
+        min-width: 100%;
+        max-width: 100%;
+        margin-bottom: 1.5rem;
+    }
+    
+    .account-wrapper {
+        flex-direction: column;
+    }
+    
+    .account-content {
+        padding-left: 0;
+        max-width: 100%;
+    }
+}

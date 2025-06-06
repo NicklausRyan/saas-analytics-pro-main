@@ -1,4 +1,4 @@
-@section('site_title', formatTitle([__('Users'), config('settings.title')]))
+{{-- This view is loaded via admin.container which handles the layout --}}
 
 @include('shared.breadcrumbs', ['breadcrumbs' => [
     ['url' => route('admin.dashboard'), 'title' => __('Admin')],
@@ -170,7 +170,8 @@
                         </div>
                     </div>
                 </div>
-            </div>
-        @endif
+            </div>        @endif
     </div>
 </div>
+
+@include('admin.shared.footer')

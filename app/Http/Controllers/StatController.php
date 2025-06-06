@@ -7,6 +7,7 @@ use App\Traits\DateRangeTrait;
 use App\Models\Website;
 use App\Models\Recent;
 use App\Models\Stat;
+use App\Models\Revenue;
 use Carbon\Carbon;
 use Carbon\CarbonTimeZone;
 use Illuminate\Http\Request;
@@ -86,16 +87,21 @@ class StatController extends Controller
 
         $browsers = $this->getBrowsers($website, $range, null, null, 'count', 'desc')
             ->limit(5)
-            ->get();
-
-        $operatingSystems = $this->getOperatingSystems($website, $range, null, null, 'count', 'desc')
+            ->get();        $operatingSystems = $this->getOperatingSystems($website, $range, null, null, 'count', 'desc')
             ->limit(5)
             ->get();
-            
-        // Get attribution data with revenue metrics
+
+        $campaigns = $this->getCampaigns($website, $range, null, null, 'count', 'desc')
+            ->limit(5)
+            ->get();
+
+        $totalCampaigns = Stat::where([['website_id', '=', $website->id], ['name', '=', 'campaign']])
+            ->whereBetween('date', [$range['from'], $range['to']])
+            ->sum('count');        // Get attribution data with revenue metrics
         $countriesWithRevenue = $this->getRevenueByCountry($website, $range);
         $browsersWithRevenue = $this->getRevenueByBrowser($website, $range);
         $operatingSystemsWithRevenue = $this->getRevenueByOperatingSystem($website, $range);
+        $referrersWithRevenue = $this->getRevenueByReferrer($website, $range, 5);
         
         $events = $this->getEvents($website, $range, null, null, 'count', 'desc')
             ->limit(5)
@@ -145,14 +151,13 @@ class StatController extends Controller
             ->whereBetween('date', [$range['from'], $range['to']])
             ->count();
         
-        $conversionRate = $sessionCount > 0 ? $revenueEventsCount / $sessionCount : 0;
-        
-        return view('stats.container', [
+        $conversionRate = $sessionCount > 0 ? $revenueEventsCount / $sessionCount : 0;        return view('stats.container', [
             'view' => 'overview', 
             'website' => $website, 
             'range' => $range, 
             'referrers' => $referrers, 
             'pages' => $pages, 
+            'campaigns' => $campaigns,
             'visitorsMap' => $visitorsMap, 
             'pageviewsMap' => $pageviewsMap, 
             'countries' => $countries, 
@@ -161,12 +166,14 @@ class StatController extends Controller
             'countriesWithRevenue' => $countriesWithRevenue,
             'browsersWithRevenue' => $browsersWithRevenue,
             'operatingSystemsWithRevenue' => $operatingSystemsWithRevenue,
+            'referrersWithRevenue' => $referrersWithRevenue,
             'events' => $events, 
             'totalVisitors' => $totalVisitors, 
             'totalPageviews' => $totalPageviews, 
             'totalVisitorsOld' => $totalVisitorsOld, 
             'totalPageviewsOld' => $totalPageviewsOld, 
             'totalReferrers' => $totalReferrers, 
+            'totalCampaigns' => $totalCampaigns,
             'bounceRate' => $bounceRate, 
             'avgSessionDuration' => $avgSessionDuration,
             'totalRevenue' => $totalRevenue,
@@ -287,8 +294,7 @@ class StatController extends Controller
      * @param Request $request
      * @param $id
      * @return \Illuminate\Contracts\Foundation\Application|\Illuminate\Contracts\View\Factory|\Illuminate\View\View
-     */
-    public function pages(Request $request, $id)
+     */    public function pages(Request $request, $id)
     {
         $website = Website::where('domain', $id)->firstOrFail();
 
@@ -308,6 +314,20 @@ class StatController extends Controller
             ->whereBetween('date', [$range['from'], $range['to']])
             ->first();
 
+        // Get revenue data for pages
+        $revenueByPage = $this->getRevenueByPage($website, $range, null, $search, $searchBy, $sortBy, $sort);
+        
+        // Calculate total revenue
+        $totalRevenue = 0;
+        foreach ($revenueByPage as $item) {
+            $totalRevenue += $item['revenue'];
+        }
+
+        // Get the currency from revenue data
+        $primaryCurrency = \App\Models\Revenue::where('website_id', '=', $website->id)
+            ->orderBy('date', 'desc')
+            ->value('currency') ?? '';
+
         $pages = $this->getPages($website, $range, $search, $searchBy, $sortBy, $sort)
             ->paginate($perPage)
             ->appends(['from' => $range['from'], 'to' => $range['to'], 'search' => $search, 'search_by' => $searchBy, 'sort_by' => $sortBy, 'sort' => $sort]);
@@ -318,7 +338,19 @@ class StatController extends Controller
         $last = $this->getPages($website, $range, $search, $searchBy, 'count', 'asc')
             ->first();
 
-        return view('stats.container', ['view' => 'pages', 'website' => $website, 'range' => $range, 'export' => 'stats.export.pages', 'pages' => $pages, 'first' => $first, 'last' => $last, 'total' => $total]);
+        return view('stats.container', [
+            'view' => 'pages', 
+            'website' => $website, 
+            'range' => $range, 
+            'export' => 'stats.export.pages', 
+            'pages' => $pages, 
+            'revenueByPage' => $revenueByPage,
+            'first' => $first, 
+            'last' => $last, 
+            'total' => $total,
+            'totalRevenue' => $totalRevenue,
+            'primaryCurrency' => $primaryCurrency
+        ]);
     }
 
     /**
@@ -327,8 +359,7 @@ class StatController extends Controller
      * @param Request $request
      * @param $id
      * @return \Illuminate\Contracts\Foundation\Application|\Illuminate\Contracts\View\Factory|\Illuminate\View\View
-     */
-    public function landingPages(Request $request, $id)
+     */    public function landingPages(Request $request, $id)
     {
         $website = Website::where('domain', $id)->firstOrFail();
 
@@ -348,6 +379,20 @@ class StatController extends Controller
             ->whereBetween('date', [$range['from'], $range['to']])
             ->first();
 
+        // Get revenue data for landing pages
+        $revenueByLandingPage = $this->getRevenueByLandingPage($website, $range, null, $search, $searchBy, $sortBy, $sort);
+        
+        // Calculate total revenue
+        $totalRevenue = 0;
+        foreach ($revenueByLandingPage as $item) {
+            $totalRevenue += $item['revenue'];
+        }
+
+        // Get the currency from revenue data
+        $primaryCurrency = \App\Models\Revenue::where('website_id', '=', $website->id)
+            ->orderBy('date', 'desc')
+            ->value('currency') ?? '';
+
         $landingPages = $this->getLandingPages($website, $range, $search, $searchBy, $sortBy, $sort)
             ->paginate($perPage)
             ->appends(['from' => $range['from'], 'to' => $range['to'], 'search' => $search, 'search_by' => $searchBy, 'sort_by' => $sortBy, 'sort' => $sort]);
@@ -358,7 +403,19 @@ class StatController extends Controller
         $last = $this->getLandingPages($website, $range, $search, $searchBy, 'count', 'asc')
             ->first();
 
-        return view('stats.container', ['view' => 'landing-pages', 'website' => $website, 'range' => $range, 'export' => 'stats.export.landing_pages', 'landingPages' => $landingPages, 'first' => $first, 'last' => $last, 'total' => $total]);
+        return view('stats.container', [
+            'view' => 'landing-pages', 
+            'website' => $website, 
+            'range' => $range, 
+            'export' => 'stats.export.landing_pages', 
+            'landingPages' => $landingPages, 
+            'revenueByLandingPage' => $revenueByLandingPage,
+            'first' => $first, 
+            'last' => $last, 
+            'total' => $total,
+            'totalRevenue' => $totalRevenue,
+            'primaryCurrency' => $primaryCurrency
+        ]);
     }
 
     /**
@@ -381,12 +438,24 @@ class StatController extends Controller
         $searchBy = in_array($request->input('search_by'), ['value']) ? $request->input('search_by') : 'value';
         $sortBy = in_array($request->input('sort_by'), ['count', 'value']) ? $request->input('sort_by') : 'count';
         $sort = in_array($request->input('sort'), ['asc', 'desc']) ? $request->input('sort') : 'desc';
-        $perPage = in_array($request->input('per_page'), [10, 25, 50, 100]) ? $request->input('per_page') : config('settings.paginate');
-
-        $total = Stat::selectRaw('SUM(`count`) as `count`')
+        $perPage = in_array($request->input('per_page'), [10, 25, 50, 100]) ? $request->input('per_page') : config('settings.paginate');        $total = Stat::selectRaw('SUM(`count`) as `count`')
             ->where([['website_id', '=', $website->id], ['name', '=', 'exit_page']])
             ->whereBetween('date', [$range['from'], $range['to']])
             ->first();
+
+        // Get revenue data for exit pages
+        $revenueByExitPage = $this->getRevenueByExitPage($website, $range, null, $search, $searchBy, $sortBy, $sort);
+        
+        // Calculate total revenue
+        $totalRevenue = 0;
+        foreach ($revenueByExitPage as $item) {
+            $totalRevenue += $item['revenue'];
+        }
+
+        // Get the currency from revenue data
+        $primaryCurrency = \App\Models\Revenue::where('website_id', '=', $website->id)
+            ->orderBy('date', 'desc')
+            ->value('currency') ?? '';
 
         $exitPages = $this->getExitPages($website, $range, $search, $searchBy, $sortBy, $sort)
             ->paginate($perPage)
@@ -396,7 +465,19 @@ class StatController extends Controller
             ->first();        $last = $this->getExitPages($website, $range, $search, $searchBy, 'count', 'asc')
             ->first();
 
-        return view('stats.container', ['view' => 'exit-pages', 'website' => $website, 'range' => $range, 'export' => 'stats.export.exit_pages', 'exitPages' => $exitPages, 'first' => $first, 'last' => $last, 'total' => $total]);
+        return view('stats.container', [
+            'view' => 'exit-pages', 
+            'website' => $website, 
+            'range' => $range, 
+            'export' => 'stats.export.exit_pages', 
+            'exitPages' => $exitPages, 
+            'revenueByExitPage' => $revenueByExitPage,
+            'first' => $first, 
+            'last' => $last, 
+            'total' => $total,
+            'totalRevenue' => $totalRevenue,
+            'primaryCurrency' => $primaryCurrency
+        ]);
     }
 
     /**
@@ -444,62 +525,94 @@ class StatController extends Controller
             'revenueSummary' => $revenueSummary,
             'revenueByDay' => $revenueByDay
         ]);
-    }
-
-    /**
+    }    /**
      * Show the Referrers stats page.
      *
      * @param Request $request
      * @param $id
      * @return \Illuminate\Contracts\Foundation\Application|\Illuminate\Contracts\View\Factory|\Illuminate\View\View
-     */
-    public function referrers(Request $request, $id)
+     */    public function referrers(Request $request, $id)
     {
         $website = Website::where('domain', $id)->firstOrFail();
 
         if ($this->statsGuard($website)) {
             return view('stats.password', ['website' => $website]);
-        };
+        }
 
         $range = $this->range();
-        $search = $request->input('search');
+        $search = $request->input('search', ''); // Provide empty string default
         $searchBy = in_array($request->input('search_by'), ['value']) ? $request->input('search_by') : 'value';
         $sortBy = in_array($request->input('sort_by'), ['count', 'value']) ? $request->input('sort_by') : 'count';
         $sort = in_array($request->input('sort'), ['asc', 'desc']) ? $request->input('sort') : 'desc';
         $perPage = in_array($request->input('per_page'), [10, 25, 50, 100]) ? $request->input('per_page') : config('settings.paginate');
+        $metric = in_array($request->input('metric'), ['visitors', 'revenue']) ? $request->input('metric') : 'visitors';
 
         $total = Stat::selectRaw('SUM(`count`) as `count`')
             ->where([['website_id', '=', $website->id], ['name', '=', 'referrer'], ['value', '<>', $website->domain], ['value', '<>', '']])
             ->whereBetween('date', [$range['from'], $range['to']])
             ->first();
 
+        $referrersChart = $this->getReferrers($website, $range, $search, $searchBy, $sortBy, $sort)
+            ->get();
+            
+        // Get revenue data as well
+        $revenueByReferrer = $this->getRevenueByReferrer($website, $range, null, $search, $searchBy, $sortBy, $sort);
+        
+        // Calculate total revenue
+        $totalRevenue = 0;
+        foreach ($revenueByReferrer as $item) {
+            $totalRevenue += $item['revenue'];
+        }
+
         $referrers = $this->getReferrers($website, $range, $search, $searchBy, $sortBy, $sort)
             ->paginate($perPage)
-            ->appends(['from' => $range['from'], 'to' => $range['to'], 'search' => $search, 'search_by' => $searchBy, 'sort_by' => $sortBy, 'sort' => $sort]);
+            ->appends([
+                'from' => $range['from'], 
+                'to' => $range['to'], 
+                'search' => $search, 
+                'search_by' => $searchBy, 
+                'sort_by' => $sortBy, 
+                'sort' => $sort,
+                'metric' => $metric
+            ]);
 
         $first = $this->getReferrers($website, $range, $search, $searchBy, 'count', 'desc')
             ->first();
 
         $last = $this->getReferrers($website, $range, $search, $searchBy, 'count', 'asc')
             ->first();
-
-        return view('stats.container', ['view' => 'referrers', 'website' => $website, 'range' => $range, 'export' => 'stats.export.referrers', 'referrers' => $referrers, 'first' => $first, 'last' => $last, 'total' => $total]);
-    }
-
-    /**
+        
+        // Get the currency from revenue data
+        $primaryCurrency = \App\Models\Revenue::where('website_id', '=', $website->id)
+            ->orderBy('date', 'desc')
+            ->value('currency') ?? '';        return view('stats.container', [
+            'view' => 'referrers', 
+            'website' => $website, 
+            'range' => $range, 
+            'export' => 'stats.export.referrers', 
+            'referrers' => $referrers, 
+            'referrersChart' => $referrersChart,
+            'revenueByReferrer' => $revenueByReferrer,
+            'first' => $first, 
+            'last' => $last, 
+            'total' => $total,
+            'totalRevenue' => $totalRevenue,
+            'metric' => $metric,
+            'primaryCurrency' => $primaryCurrency
+        ]);
+    }    /**
      * Show the Search Engines stats page.
      *
      * @param Request $request
      * @param $id
      * @return \Illuminate\Contracts\Foundation\Application|\Illuminate\Contracts\View\Factory|\Illuminate\View\View
-     */
-    public function searchEngines(Request $request, $id)
+     */    public function searchEngines(Request $request, $id)
     {
         $website = Website::where('domain', $id)->firstOrFail();
 
         if ($this->statsGuard($website)) {
             return view('stats.password', ['website' => $website]);
-        };
+        }
 
         $range = $this->range();
         $search = $request->input('search');
@@ -515,6 +628,20 @@ class StatController extends Controller
             ->whereBetween('date', [$range['from'], $range['to']])
             ->first();
 
+        // Get revenue data for search engines
+        $revenueBySearchEngine = $this->getRevenueBySearchEngine($website, $range, null, $search, $searchBy, $sortBy, $sort);
+        
+        // Calculate total revenue
+        $totalRevenue = 0;
+        foreach ($revenueBySearchEngine as $item) {
+            $totalRevenue += $item['revenue'];
+        }
+
+        // Get the currency from revenue data
+        $primaryCurrency = \App\Models\Revenue::where('website_id', '=', $website->id)
+            ->orderBy('date', 'desc')
+            ->value('currency') ?? '';
+
         $searchEngines = $this->getSearchEngines($website, $range, $search, $searchBy, $sortBy, $sort)
             ->paginate($perPage)
             ->appends(['from' => $range['from'], 'to' => $range['to'], 'search' => $search, 'search_by' => $searchBy, 'sort_by' => $sortBy, 'sort' => $sort]);
@@ -525,23 +652,32 @@ class StatController extends Controller
         $last = $this->getSearchEngines($website, $range, $search, $searchBy, 'count', 'asc')
             ->first();
 
-        return view('stats.container', ['view' => 'search-engines', 'website' => $website, 'range' => $range, 'export' => 'stats.export.search_engines', 'searchEngines' => $searchEngines, 'first' => $first, 'last' => $last, 'total' => $total]);
-    }
-
-    /**
+        return view('stats.container', [
+            'view' => 'search-engines', 
+            'website' => $website, 
+            'range' => $range, 
+            'export' => 'stats.export.search_engines', 
+            'searchEngines' => $searchEngines, 
+            'revenueBySearchEngine' => $revenueBySearchEngine,
+            'first' => $first, 
+            'last' => $last, 
+            'total' => $total,
+            'totalRevenue' => $totalRevenue,
+            'primaryCurrency' => $primaryCurrency
+        ]);
+    }/**
      * Show the Social Networks stats page.
      *
      * @param Request $request
      * @param $id
      * @return \Illuminate\Contracts\Foundation\Application|\Illuminate\Contracts\View\Factory|\Illuminate\View\View
-     */
-    public function socialNetworks(Request $request, $id)
+     */    public function socialNetworks(Request $request, $id)
     {
         $website = Website::where('domain', $id)->firstOrFail();
 
         if ($this->statsGuard($website)) {
             return view('stats.password', ['website' => $website]);
-        };
+        }
 
         $range = $this->range();
         $search = $request->input('search');
@@ -557,6 +693,20 @@ class StatController extends Controller
             ->whereBetween('date', [$range['from'], $range['to']])
             ->first();
 
+        // Get revenue data for social networks
+        $revenueBySocialNetwork = $this->getRevenueBySocialNetwork($website, $range, null, $search, $searchBy, $sortBy, $sort);
+        
+        // Calculate total revenue
+        $totalRevenue = 0;
+        foreach ($revenueBySocialNetwork as $item) {
+            $totalRevenue += $item['revenue'];
+        }
+
+        // Get the currency from revenue data
+        $primaryCurrency = \App\Models\Revenue::where('website_id', '=', $website->id)
+            ->orderBy('date', 'desc')
+            ->value('currency') ?? '';
+
         $socialNetworks = $this->getSocialNetworks($website, $range, $search, $searchBy, $sortBy, $sort)
             ->paginate($perPage)
             ->appends(['from' => $range['from'], 'to' => $range['to'], 'search' => $search, 'search_by' => $searchBy, 'sort_by' => $sortBy, 'sort' => $sort]);
@@ -567,10 +717,20 @@ class StatController extends Controller
         $last = $this->getSocialNetworks($website, $range, $search, $searchBy, 'count', 'asc')
             ->first();
 
-        return view('stats.container', ['view' => 'social-networks', 'website' => $website, 'range' => $range, 'export' => 'stats.export.social_networks', 'socialNetworks' => $socialNetworks, 'first' => $first, 'last' => $last, 'total' => $total]);
-    }
-
-    /**
+        return view('stats.container', [
+            'view' => 'social-networks', 
+            'website' => $website, 
+            'range' => $range, 
+            'export' => 'stats.export.social_networks', 
+            'socialNetworks' => $socialNetworks, 
+            'revenueBySocialNetwork' => $revenueBySocialNetwork,
+            'first' => $first, 
+            'last' => $last, 
+            'total' => $total,
+            'totalRevenue' => $totalRevenue,
+            'primaryCurrency' => $primaryCurrency
+        ]);
+    }    /**
      * Show the Campaigns stats page.
      *
      * @param Request $request
@@ -597,6 +757,20 @@ class StatController extends Controller
             ->whereBetween('date', [$range['from'], $range['to']])
             ->first();
 
+        // Get revenue data for campaigns
+        $revenueByCampaign = $this->getRevenueByCampaign($website, $range, null, $search, $searchBy, $sortBy, $sort);
+        
+        // Calculate total revenue
+        $totalRevenue = 0;
+        foreach ($revenueByCampaign as $item) {
+            $totalRevenue += $item['revenue'];
+        }
+
+        // Get the currency from revenue data
+        $primaryCurrency = \App\Models\Revenue::where('website_id', '=', $website->id)
+            ->orderBy('date', 'desc')
+            ->value('currency') ?? '';
+
         $campaigns = $this->getCampaigns($website, $range, $search, $searchBy, $sortBy, $sort)
             ->paginate($perPage)
             ->appends(['from' => $range['from'], 'to' => $range['to'], 'search' => $search, 'search_by' => $searchBy, 'sort_by' => $sortBy, 'sort' => $sort]);
@@ -607,7 +781,19 @@ class StatController extends Controller
         $last = $this->getCampaigns($website, $range, $search, $searchBy, 'count', 'asc')
             ->first();
 
-        return view('stats.container', ['view' => 'campaigns', 'website' => $website, 'range' => $range, 'export' => 'stats.export.campaigns', 'campaigns' => $campaigns, 'first' => $first, 'last' => $last, 'total' => $total]);
+        return view('stats.container', [
+            'view' => 'campaigns', 
+            'website' => $website, 
+            'range' => $range, 
+            'export' => 'stats.export.campaigns', 
+            'campaigns' => $campaigns, 
+            'revenueByCampaign' => $revenueByCampaign,
+            'first' => $first, 
+            'last' => $last, 
+            'total' => $total,
+            'totalRevenue' => $totalRevenue,
+            'primaryCurrency' => $primaryCurrency
+        ]);
     }
 
     /**
@@ -616,8 +802,7 @@ class StatController extends Controller
      * @param Request $request
      * @param $id
      * @return \Illuminate\Contracts\Foundation\Application|\Illuminate\Contracts\View\Factory|\Illuminate\View\View
-     */
-    public function continents(Request $request, $id)
+     */    public function continents(Request $request, $id)
     {
         $website = Website::where('domain', $id)->firstOrFail();
 
@@ -626,11 +811,12 @@ class StatController extends Controller
         };
 
         $range = $this->range();
-        $search = $request->input('search');
+        $search = $request->input('search', ''); // Provide empty string default
         $searchBy = in_array($request->input('search_by'), ['value']) ? $request->input('search_by') : 'value';
         $sortBy = in_array($request->input('sort_by'), ['count', 'value']) ? $request->input('sort_by') : 'count';
         $sort = in_array($request->input('sort'), ['asc', 'desc']) ? $request->input('sort') : 'desc';
         $perPage = in_array($request->input('per_page'), [10, 25, 50, 100]) ? $request->input('per_page') : config('settings.paginate');
+        $metric = in_array($request->input('metric'), ['visitors', 'revenue']) ? $request->input('metric') : 'visitors';
 
         $total = Stat::selectRaw('SUM(`count`) as `count`')
             ->where([['website_id', '=', $website->id], ['name', '=', 'continent']])
@@ -639,7 +825,18 @@ class StatController extends Controller
 
         $continents = $this->getContinents($website, $range, $search, $searchBy, $sortBy, $sort)
             ->paginate($perPage)
-            ->appends(['from' => $range['from'], 'to' => $range['to'], 'search' => $search, 'search_by' => $searchBy, 'sort_by' => $sortBy, 'sort' => $sort]);
+            ->appends(['from' => $range['from'], 'to' => $range['to'], 'search' => $search, 'search_by' => $searchBy, 'sort_by' => $sortBy, 'sort' => $sort, 'metric' => $metric]);        // Get revenue data for continents
+        $revenueByContinent = $this->getRevenueByContinents($website, $range, null, $search, $searchBy, $sortBy, $sort);
+
+        // Calculate total revenue
+        $totalRevenue = array_sum(array_column($revenueByContinent->toArray(), 'revenue'));
+
+        // Get primary currency
+        $primaryCurrency = \DB::table('revenue')
+            ->where('website_id', $website->id)
+            ->whereBetween('date', [$range['from'], $range['to']])
+            ->orderBy('date', 'desc')
+            ->value('currency') ?? '';
 
         $first = $this->getContinents($website, $range, $search, $searchBy, 'count', 'desc')
             ->first();
@@ -647,7 +844,24 @@ class StatController extends Controller
         $last = $this->getContinents($website, $range, $search, $searchBy, 'count', 'asc')
             ->first();
 
-        return view('stats.container', ['view' => 'continents', 'website' => $website, 'range' => $range, 'export' => 'stats.export.continents', 'continents' => $continents, 'first' => $first, 'last' => $last, 'total' => $total]);
+        return view('stats.container', [
+            'view' => 'continents', 
+            'website' => $website, 
+            'range' => $range, 
+            'export' => 'stats.export.continents', 
+            'continents' => $continents, 
+            'revenueByContinent' => $revenueByContinent,
+            'first' => $first, 
+            'last' => $last, 
+            'total' => $total,
+            'totalRevenue' => $totalRevenue,
+            'metric' => $metric,
+            'primaryCurrency' => $primaryCurrency,
+            'search' => $search,
+            'searchBy' => $searchBy,
+            'sortBy' => $sortBy,
+            'sort' => $sort
+        ]);
     }
 
     /**
@@ -741,14 +955,13 @@ class StatController extends Controller
 
         if ($this->statsGuard($website)) {
             return view('stats.password', ['website' => $website]);
-        };
-
-        $range = $this->range();
+        };        $range = $this->range();
         $search = $request->input('search', ''); // Provide empty string default
         $searchBy = in_array($request->input('search_by'), ['value']) ? $request->input('search_by') : 'value';
         $sortBy = in_array($request->input('sort_by'), ['count', 'value']) ? $request->input('sort_by') : 'count';
         $sort = in_array($request->input('sort'), ['asc', 'desc']) ? $request->input('sort') : 'desc';
         $perPage = in_array($request->input('per_page'), [10, 25, 50, 100]) ? $request->input('per_page') : config('settings.paginate');
+        $metric = in_array($request->input('metric'), ['visitors', 'revenue']) ? $request->input('metric') : 'visitors';
 
         $total = Stat::selectRaw('SUM(`count`) as `count`')
             ->where([['website_id', '=', $website->id], ['name', '=', 'city']])
@@ -757,7 +970,18 @@ class StatController extends Controller
 
         $cities = $this->getCities($website, $range, $search, $searchBy, $sortBy, $sort)
             ->paginate($perPage)
-            ->appends(['from' => $range['from'], 'to' => $range['to'], 'search' => $search, 'search_by' => $searchBy, 'sort_by' => $sortBy, 'sort' => $sort]);
+            ->appends(['from' => $range['from'], 'to' => $range['to'], 'search' => $search, 'search_by' => $searchBy, 'sort_by' => $sortBy, 'sort' => $sort, 'metric' => $metric]);        // Get revenue data for cities
+        $revenueByCity = $this->getRevenueByCities($website, $range, null, $search, $searchBy, $sortBy, $sort);
+
+        // Calculate total revenue
+        $totalRevenue = array_sum(array_column($revenueByCity->toArray(), 'revenue'));
+
+        // Get primary currency
+        $primaryCurrency = \DB::table('revenue')
+            ->where('website_id', $website->id)
+            ->whereBetween('date', [$range['from'], $range['to']])
+            ->orderBy('date', 'desc')
+            ->value('currency') ?? '';
 
         $first = $this->getCities($website, $range, $search, $searchBy, 'count', 'desc')
             ->first();
@@ -765,7 +989,24 @@ class StatController extends Controller
         $last = $this->getCities($website, $range, $search, $searchBy, 'count', 'asc')
             ->first();
 
-        return view('stats.container', ['view' => 'cities', 'website' => $website, 'range' => $range, 'export' => 'stats.export.cities', 'cities' => $cities, 'first' => $first, 'last' => $last, 'total' => $total]);
+        return view('stats.container', [
+            'view' => 'cities', 
+            'website' => $website, 
+            'range' => $range, 
+            'export' => 'stats.export.cities', 
+            'cities' => $cities, 
+            'revenueByCity' => $revenueByCity,
+            'first' => $first, 
+            'last' => $last, 
+            'total' => $total,
+            'totalRevenue' => $totalRevenue,
+            'metric' => $metric,
+            'primaryCurrency' => $primaryCurrency,
+            'search' => $search,
+            'searchBy' => $searchBy,
+            'sortBy' => $sortBy,
+            'sort' => $sort
+        ]);
     }
 
     /**
@@ -774,8 +1015,7 @@ class StatController extends Controller
      * @param Request $request
      * @param $id
      * @return \Illuminate\Contracts\Foundation\Application|\Illuminate\Contracts\View\Factory|\Illuminate\View\View
-     */
-    public function languages(Request $request, $id)
+     */    public function languages(Request $request, $id)
     {
         $website = Website::where('domain', $id)->firstOrFail();
 
@@ -789,6 +1029,7 @@ class StatController extends Controller
         $sortBy = in_array($request->input('sort_by'), ['count', 'value']) ? $request->input('sort_by') : 'count';
         $sort = in_array($request->input('sort'), ['asc', 'desc']) ? $request->input('sort') : 'desc';
         $perPage = in_array($request->input('per_page'), [10, 25, 50, 100]) ? $request->input('per_page') : config('settings.paginate');
+        $metric = in_array($request->input('metric'), ['visitors', 'revenue']) ? $request->input('metric') : 'visitors';
 
         $total = Stat::selectRaw('SUM(`count`) as `count`')
             ->where([['website_id', '=', $website->id], ['name', '=', 'language']])
@@ -797,15 +1038,37 @@ class StatController extends Controller
 
         $languages = $this->getLanguages($website, $range, $search, $searchBy, $sortBy, $sort)
             ->paginate($perPage)
-            ->appends(['from' => $range['from'], 'to' => $range['to'], 'search' => $search, 'search_by' => $searchBy, 'sort_by' => $sortBy, 'sort' => $sort]);
+            ->appends(['from' => $range['from'], 'to' => $range['to'], 'search' => $search, 'search_by' => $searchBy, 'sort_by' => $sortBy, 'sort' => $sort, 'metric' => $metric]);        // Get revenue data for languages
+        $revenueByLanguages = $this->getRevenueByLanguages($website, $range, null, $search, $searchBy, $sortBy, $sort);
+
+        // Calculate total revenue and get primary currency
+        $totalRevenue = array_sum($revenueByLanguages->toArray());
+        $primaryCurrency = Revenue::where('website_id', $website->id)
+            ->whereBetween('date', [$range['from'], $range['to']])
+            ->value('currency') ?? '';
 
         $first = $this->getLanguages($website, $range, $search, $searchBy, 'count', 'desc')
             ->first();
 
         $last = $this->getLanguages($website, $range, $search, $searchBy, 'count', 'asc')
-            ->first();
-
-        return view('stats.container', ['view' => 'languages', 'website' => $website, 'range' => $range, 'export' => 'stats.export.languages', 'languages' => $languages, 'first' => $first, 'last' => $last, 'total' => $total]);
+            ->first();        return view('stats.container', [
+            'view' => 'languages', 
+            'website' => $website, 
+            'range' => $range, 
+            'export' => 'stats.export.languages', 
+            'languages' => $languages, 
+            'revenueByLanguages' => $revenueByLanguages,
+            'first' => $first, 
+            'last' => $last, 
+            'total' => $total,
+            'totalRevenue' => $totalRevenue,
+            'metric' => $metric,
+            'primaryCurrency' => $primaryCurrency,
+            'search' => $search,
+            'searchBy' => $searchBy,
+            'sortBy' => $sortBy,
+            'sort' => $sort
+        ]);
     }
 
     /**
@@ -840,12 +1103,36 @@ class StatController extends Controller
             ->appends(['from' => $range['from'], 'to' => $range['to'], 'search' => $search, 'search_by' => $searchBy, 'sort_by' => $sortBy, 'sort' => $sort]);
 
         $first = $this->getOperatingSystems($website, $range, $search, $searchBy, 'count', 'desc')
+            ->first();        $last = $this->getOperatingSystems($website, $range, $search, $searchBy, 'count', 'asc')
             ->first();
 
-        $last = $this->getOperatingSystems($website, $range, $search, $searchBy, 'count', 'asc')
-            ->first();
+        // Get revenue data by operating system
+        $revenueByOperatingSystem = $this->getRevenueByOperatingSystem($website, $range);
+        
+        // Calculate total revenue
+        $totalRevenue = 0;
+        foreach ($revenueByOperatingSystem as $item) {
+            $totalRevenue += $item['revenue'];
+        }
 
-        return view('stats.container', ['view' => 'operating-systems', 'website' => $website, 'range' => $range, 'export' => 'stats.export.operating_systems', 'operatingSystems' => $operatingSystems, 'first' => $first, 'last' => $last, 'total' => $total]);
+        // Get the currency from revenue data
+        $primaryCurrency = \App\Models\Revenue::where('website_id', '=', $website->id)
+            ->orderBy('date', 'desc')
+            ->value('currency') ?? '';
+
+        return view('stats.container', [
+            'view' => 'operating-systems', 
+            'website' => $website, 
+            'range' => $range, 
+            'export' => 'stats.export.operating_systems', 
+            'operatingSystems' => $operatingSystems, 
+            'revenueByOperatingSystem' => $revenueByOperatingSystem,
+            'first' => $first, 
+            'last' => $last, 
+            'total' => $total,
+            'totalRevenue' => $totalRevenue,
+            'primaryCurrency' => $primaryCurrency
+        ]);
     }
 
     /**
@@ -854,8 +1141,7 @@ class StatController extends Controller
      * @param Request $request
      * @param $id
      * @return \Illuminate\Contracts\Foundation\Application|\Illuminate\Contracts\View\Factory|\Illuminate\View\View
-     */
-    public function browsers(Request $request, $id)
+     */    public function browsers(Request $request, $id)
     {
         $website = Website::where('domain', $id)->firstOrFail();
 
@@ -869,15 +1155,33 @@ class StatController extends Controller
         $sortBy = in_array($request->input('sort_by'), ['count', 'value']) ? $request->input('sort_by') : 'count';
         $sort = in_array($request->input('sort'), ['asc', 'desc']) ? $request->input('sort') : 'desc';
         $perPage = in_array($request->input('per_page'), [10, 25, 50, 100]) ? $request->input('per_page') : config('settings.paginate');
+        $metric = in_array($request->input('metric'), ['visitors', 'revenue']) ? $request->input('metric') : 'visitors';
 
         $total = Stat::selectRaw('SUM(`count`) as `count`')
             ->where([['website_id', '=', $website->id], ['name', '=', 'browser']])
             ->whereBetween('date', [$range['from'], $range['to']])
             ->first();
 
+        // Get revenue data by browser
+        $revenueByBrowser = $this->getRevenueByBrowser($website, $range);
+        
+        // Calculate total revenue
+        $totalRevenue = 0;
+        foreach ($revenueByBrowser as $item) {
+            $totalRevenue += $item['revenue'];
+        }
+
         $browsers = $this->getBrowsers($website, $range, $search, $searchBy, $sortBy, $sort)
             ->paginate($perPage)
-            ->appends(['from' => $range['from'], 'to' => $range['to'], 'search' => $search, 'search_by' => $searchBy, 'sort_by' => $sortBy, 'sort' => $sort]);
+            ->appends([
+                'from' => $range['from'], 
+                'to' => $range['to'], 
+                'search' => $search, 
+                'search_by' => $searchBy, 
+                'sort_by' => $sortBy, 
+                'sort' => $sort,
+                'metric' => $metric
+            ]);
 
         $first = $this->getBrowsers($website, $range, $search, $searchBy, 'count', 'desc')
             ->first();
@@ -885,7 +1189,25 @@ class StatController extends Controller
         $last = $this->getBrowsers($website, $range, $search, $searchBy, 'count', 'asc')
             ->first();
 
-        return view('stats.container', ['view' => 'browsers', 'website' => $website, 'range' => $range, 'export' => 'stats.export.browsers', 'browsers' => $browsers, 'first' => $first, 'last' => $last, 'total' => $total]);
+        // Get the currency from revenue data
+        $primaryCurrency = \App\Models\Revenue::where('website_id', '=', $website->id)
+            ->orderBy('date', 'desc')
+            ->value('currency') ?? '';
+
+        return view('stats.container', [
+            'view' => 'browsers', 
+            'website' => $website, 
+            'range' => $range, 
+            'export' => 'stats.export.browsers', 
+            'browsers' => $browsers, 
+            'revenueByBrowser' => $revenueByBrowser,
+            'first' => $first, 
+            'last' => $last, 
+            'total' => $total,
+            'totalRevenue' => $totalRevenue,
+            'metric' => $metric,
+            'primaryCurrency' => $primaryCurrency
+        ]);
     }
 
     /**
@@ -920,12 +1242,36 @@ class StatController extends Controller
             ->appends(['from' => $range['from'], 'to' => $range['to'], 'search' => $search, 'search_by' => $searchBy, 'sort_by' => $sortBy, 'sort' => $sort]);
 
         $first = $this->getScreenResolutions($website, $range, $search, $searchBy, 'count', 'desc')
+            ->first();        $last = $this->getScreenResolutions($website, $range, $search, $searchBy, 'count', 'asc')
             ->first();
 
-        $last = $this->getScreenResolutions($website, $range, $search, $searchBy, 'count', 'asc')
-            ->first();
+        // Get revenue data by screen resolution
+        $revenueByScreenResolution = $this->getRevenueByScreenResolution($website, $range);
+        
+        // Calculate total revenue
+        $totalRevenue = 0;
+        foreach ($revenueByScreenResolution as $item) {
+            $totalRevenue += $item['revenue'];
+        }
 
-        return view('stats.container', ['view' => 'screen-resolutions', 'website' => $website, 'range' => $range, 'export' => 'stats.export.screen_resolutions', 'screenResolutions' => $screenResolutions, 'first' => $first, 'last' => $last, 'total' => $total]);
+        // Get the currency from revenue data
+        $primaryCurrency = \App\Models\Revenue::where('website_id', '=', $website->id)
+            ->orderBy('date', 'desc')
+            ->value('currency') ?? '';
+
+        return view('stats.container', [
+            'view' => 'screen-resolutions', 
+            'website' => $website, 
+            'range' => $range, 
+            'export' => 'stats.export.screen_resolutions', 
+            'screenResolutions' => $screenResolutions, 
+            'revenueByScreenResolution' => $revenueByScreenResolution,
+            'first' => $first, 
+            'last' => $last, 
+            'total' => $total,
+            'totalRevenue' => $totalRevenue,
+            'primaryCurrency' => $primaryCurrency
+        ]);
     }
 
     /**
@@ -960,12 +1306,36 @@ class StatController extends Controller
             ->appends(['from' => $range['from'], 'to' => $range['to'], 'search' => $search, 'search_by' => $searchBy, 'sort_by' => $sortBy, 'sort' => $sort]);
 
         $first = $this->getDevices($website, $range, $search, $searchBy, 'count', 'desc')
+            ->first();        $last = $this->getDevices($website, $range, $search, $searchBy, 'count', 'asc')
             ->first();
 
-        $last = $this->getDevices($website, $range, $search, $searchBy, 'count', 'asc')
-            ->first();
+        // Get revenue data by device
+        $revenueByDevice = $this->getRevenueByDevice($website, $range);
+        
+        // Calculate total revenue
+        $totalRevenue = 0;
+        foreach ($revenueByDevice as $item) {
+            $totalRevenue += $item['revenue'];
+        }
 
-        return view('stats.container', ['view' => 'devices', 'website' => $website, 'range' => $range, 'export' => 'stats.export.devices', 'devices' => $devices, 'first' => $first, 'last' => $last, 'total' => $total]);
+        // Get the currency from revenue data
+        $primaryCurrency = \App\Models\Revenue::where('website_id', '=', $website->id)
+            ->orderBy('date', 'desc')
+            ->value('currency') ?? '';
+
+        return view('stats.container', [
+            'view' => 'devices', 
+            'website' => $website, 
+            'range' => $range, 
+            'export' => 'stats.export.devices', 
+            'devices' => $devices, 
+            'revenueByDevice' => $revenueByDevice,
+            'first' => $first, 
+            'last' => $last, 
+            'total' => $total,
+            'totalRevenue' => $totalRevenue,
+            'primaryCurrency' => $primaryCurrency
+        ]);
     }
 
     /**
@@ -1594,9 +1964,15 @@ class StatController extends Controller
             ->groupBy('date')
             ->orderBy('total', 'desc')
             ->first();
-            
-        // Calculate per day average
-        $days = Carbon::createFromFormat('Y-m-d', $range['from'])->diffInDays(Carbon::createFromFormat('Y-m-d', $range['to'])) + 1;
+              // Calculate per day average
+        try {
+            $fromDate = Carbon::createFromFormat('Y-m-d', $range['from']);
+            $toDate = Carbon::createFromFormat('Y-m-d', $range['to']);
+        } catch (\Exception $e) {
+            $fromDate = Carbon::parse($range['from']);
+            $toDate = Carbon::parse($range['to']);
+        }
+        $days = $fromDate->diffInDays($toDate) + 1;
         $averagePerDay = $days > 0 ? $totalAmount / $days : 0;
         
         // Get all-time revenue for a broader perspective
@@ -1608,10 +1984,14 @@ class StatController extends Controller
         $monthToDateRevenue = \App\Models\Revenue::where('website_id', '=', $website->id)
             ->whereRaw("DATE_FORMAT(date, '%Y-%m') = ?", [$currentMonth])
             ->sum('amount');
-            
-        // Calculate growth rate by comparing to previous period
-        $previousFrom = Carbon::createFromFormat('Y-m-d', $range['from'])->subDays($days);
-        $previousTo = Carbon::createFromFormat('Y-m-d', $range['from'])->subDay();
+              // Calculate growth rate by comparing to previous period
+        try {
+            $previousFrom = Carbon::createFromFormat('Y-m-d', $range['from'])->subDays($days);
+            $previousTo = Carbon::createFromFormat('Y-m-d', $range['from'])->subDay();
+        } catch (\Exception $e) {
+            $previousFrom = Carbon::parse($range['from'])->subDays($days);
+            $previousTo = Carbon::parse($range['from'])->subDay();
+        }
         
         $previousPeriodRevenue = \App\Models\Revenue::where('website_id', '=', $website->id)
             ->whereBetween('date', [$previousFrom->format('Y-m-d'), $previousTo->format('Y-m-d')])
@@ -1658,11 +2038,16 @@ class StatController extends Controller
                 return $item->total;
             })
             ->toArray();
-            
+
         $revenueMap = [];
         
-        $startDate = Carbon::createFromFormat('Y-m-d', $range['from']);
-        $endDate = Carbon::createFromFormat('Y-m-d', $range['to']);
+        try {
+            $startDate = Carbon::createFromFormat('Y-m-d', $range['from']);
+            $endDate = Carbon::createFromFormat('Y-m-d', $range['to']);
+        } catch (\Exception $e) {
+            $startDate = Carbon::parse($range['from']);
+            $endDate = Carbon::parse($range['to']);
+        }
         
         while($startDate->lte($endDate)) {
             $date = $startDate->format('Y-m-d');
@@ -1952,9 +2337,7 @@ class StatController extends Controller
             ->whereBetween('date', [$range['from'], $range['to']])
             ->groupBy('value')
             ->orderBy($sortBy, $sort);
-    }
-
-    /**
+    }    /**
      * Get aggregated revenue by country
      *
      * @param $website
@@ -1962,11 +2345,6 @@ class StatController extends Controller
      * @return array
      */    private function getRevenueByCountry($website, $range, $limit = null, $search = null, $searchBy = null, $sortBy = null, $sort = null)
     {
-        // Get all revenues in range
-        $revenueEvents = \App\Models\Revenue::where('website_id', '=', $website->id)
-            ->whereBetween('date', [$range['from'], $range['to']])
-            ->get();
-            
         // Get countries stats with optional limit
         $countriesQuery = $this->getCountries($website, $range, $search, $searchBy, $sortBy ?: 'count', $sort ?: 'desc');
         
@@ -1974,29 +2352,51 @@ class StatController extends Controller
             $countries = $countriesQuery->limit($limit)->get();
         } else {
             $countries = $countriesQuery->get();
-        }
-            
+        }        // Get revenue data by country using a subquery approach
+        // Since visitor_id in revenue table represents a session identifier,
+        // we need to correlate with recent visitor data for attribution
+        $revenueByCountry = \DB::table('revenue')
+            ->selectRaw('
+                CASE 
+                    WHEN SUBSTRING_INDEX(SUBSTRING_INDEX(recents.country, ":", 2), ":", -1) IS NOT NULL 
+                    THEN SUBSTRING_INDEX(SUBSTRING_INDEX(recents.country, ":", 2), ":", -1)
+                    ELSE "Unknown"
+                END as country_value, 
+                SUM(revenue.amount) as total_revenue
+            ')
+            ->join('recents', function($join) use ($website, $range) {
+                $join->on('recents.website_id', '=', 'revenue.website_id')
+                     ->whereRaw('DATE(recents.created_at) = revenue.date')
+                     ->where('recents.website_id', '=', $website->id)
+                     ->whereBetween('recents.created_at', [
+                         $range['from'] . ' 00:00:00', 
+                         $range['to'] . ' 23:59:59'
+                     ]);
+            })
+            ->where('revenue.website_id', '=', $website->id)
+            ->whereBetween('revenue.date', [$range['from'], $range['to']])
+            ->whereNotNull('recents.country')
+            ->groupBy('country_value')
+            ->get()
+            ->keyBy('country_value');
+        
         // Prepare result data structure
         $result = [];
         
         foreach ($countries as $country) {
-            $countryCode = explode(':', $country->value)[0] ?? '';
-            
-            // Sum revenue for this country
-            $countryRevenue = $revenueEvents->where('country_code', $countryCode)->sum('amount');
+            $countryRevenue = $revenueByCountry->get($country->value);
+            $revenueAmount = $countryRevenue ? $countryRevenue->total_revenue : 0;
             
             $result[] = [
                 'value' => $country->value,
                 'visits' => $country->count, 
-                'revenue' => $countryRevenue,
-                'revenuePerVisitor' => $country->count > 0 ? $countryRevenue / $country->count : 0
+                'revenue' => (float)$revenueAmount,
+                'revenuePerVisitor' => $country->count > 0 ? $revenueAmount / $country->count : 0
             ];
         }
         
         return $result;
-    }
-    
-    /**
+    }      /**
      * Get aggregated revenue by browser
      *
      * @param $website
@@ -2005,35 +2405,45 @@ class StatController extends Controller
      */
     private function getRevenueByBrowser($website, $range)
     {
-        // Get all revenues in range
-        $revenueEvents = \App\Models\Revenue::where('website_id', '=', $website->id)
-            ->whereBetween('date', [$range['from'], $range['to']])
-            ->get();
-            
         // Get browser stats
         $browsers = $this->getBrowsers($website, $range, null, null, 'count', 'desc')
             ->limit(5)
-            ->get();
+            ->get();        // Get revenue data by browser using recent visitor data
+        $revenueByBrowser = \DB::table('revenue')
+            ->selectRaw('recents.browser as browser_value, SUM(revenue.amount) as total_revenue')
+            ->join('recents', function($join) use ($website, $range) {
+                $join->on('recents.website_id', '=', 'revenue.website_id')
+                     ->whereRaw('DATE(recents.created_at) = revenue.date')
+                     ->where('recents.website_id', '=', $website->id)
+                     ->whereBetween('recents.created_at', [
+                         $range['from'] . ' 00:00:00', 
+                         $range['to'] . ' 23:59:59'
+                     ]);
+            })
+            ->where('revenue.website_id', '=', $website->id)
+            ->whereBetween('revenue.date', [$range['from'], $range['to']])
+            ->whereNotNull('recents.browser')
+            ->groupBy('recents.browser')
+            ->get()
+            ->keyBy('browser_value');
             
         // Prepare result data structure
         $result = [];
         
         foreach ($browsers as $browser) {
-            // Sum revenue for this browser
-            $browserRevenue = $revenueEvents->where('browser', $browser->value)->sum('amount');
+            $browserRevenue = $revenueByBrowser->get($browser->value);
+            $revenueAmount = $browserRevenue ? $browserRevenue->total_revenue : 0;
             
             $result[] = [
                 'value' => $browser->value,
                 'visits' => $browser->count, 
-                'revenue' => $browserRevenue,
-                'revenuePerVisitor' => $browser->count > 0 ? $browserRevenue / $browser->count : 0
+                'revenue' => (float)$revenueAmount,
+                'revenuePerVisitor' => $browser->count > 0 ? $revenueAmount / $browser->count : 0
             ];
         }
         
         return $result;
-    }
-    
-    /**
+    }      /**
      * Get aggregated revenue by operating system
      *
      * @param $website
@@ -2042,28 +2452,180 @@ class StatController extends Controller
      */
     private function getRevenueByOperatingSystem($website, $range)
     {
-        // Get all revenues in range
-        $revenueEvents = \App\Models\Revenue::where('website_id', '=', $website->id)
-            ->whereBetween('date', [$range['from'], $range['to']])
-            ->get();
-            
         // Get OS stats
         $operatingSystems = $this->getOperatingSystems($website, $range, null, null, 'count', 'desc')
             ->limit(5)
-            ->get();
+            ->get();        // Get revenue data by operating system using recent visitor data
+        $revenueByOS = \DB::table('revenue')
+            ->selectRaw('recents.os as os_value, SUM(revenue.amount) as total_revenue')
+            ->join('recents', function($join) use ($website, $range) {
+                $join->on('recents.website_id', '=', 'revenue.website_id')
+                     ->whereRaw('DATE(recents.created_at) = revenue.date')
+                     ->where('recents.website_id', '=', $website->id)
+                     ->whereBetween('recents.created_at', [
+                         $range['from'] . ' 00:00:00', 
+                         $range['to'] . ' 23:59:59'
+                     ]);
+            })
+            ->where('revenue.website_id', '=', $website->id)
+            ->whereBetween('revenue.date', [$range['from'], $range['to']])
+            ->whereNotNull('recents.os')
+            ->groupBy('recents.os')
+            ->get()
+            ->keyBy('os_value');
             
         // Prepare result data structure
         $result = [];
         
         foreach ($operatingSystems as $os) {
-            // Sum revenue for this OS
-            $osRevenue = $revenueEvents->where('os', $os->value)->sum('amount');
+            $osRevenue = $revenueByOS->get($os->value);
+            $revenueAmount = $osRevenue ? $osRevenue->total_revenue : 0;
             
             $result[] = [
                 'value' => $os->value,
                 'visits' => $os->count, 
-                'revenue' => $osRevenue,
-                'revenuePerVisitor' => $os->count > 0 ? $osRevenue / $os->count : 0
+                'revenue' => (float)$revenueAmount,
+                'revenuePerVisitor' => $os->count > 0 ? $revenueAmount / $os->count : 0
+            ];
+        }
+          return $result;
+    }    /**
+     * Get aggregated revenue by referrer
+     *
+     * @param $website
+     * @param $range
+     * @param null $limit
+     * @param null $search
+     * @param null $searchBy
+     * @param null $sortBy
+     * @param null $sort
+     * @return array
+     */
+    private function getRevenueByReferrer($website, $range, $limit = null, $search = null, $searchBy = null, $sortBy = null, $sort = null)
+    {
+        // Get referrer stats with optional limit
+        $referrersQuery = $this->getReferrers($website, $range, $search, $searchBy, $sortBy ?: 'count', $sort ?: 'desc');
+        
+        if ($limit) {
+            $referrers = $referrersQuery->limit($limit)->get();
+        } else {
+            $referrers = $referrersQuery->get();
+        }        // Get revenue data by referrer using recent visitor data
+        $revenueByReferrer = \DB::table('revenue')
+            ->selectRaw('recents.referrer as referrer_value, SUM(revenue.amount) as total_revenue')
+            ->join('recents', function($join) use ($website, $range) {
+                $join->on('recents.website_id', '=', 'revenue.website_id')
+                     ->whereRaw('DATE(recents.created_at) = revenue.date')
+                     ->where('recents.website_id', '=', $website->id)
+                     ->whereBetween('recents.created_at', [
+                         $range['from'] . ' 00:00:00', 
+                         $range['to'] . ' 23:59:59'
+                     ]);
+            })
+            ->where('revenue.website_id', '=', $website->id)
+            ->whereBetween('revenue.date', [$range['from'], $range['to']])
+            ->whereNotNull('recents.referrer')
+            ->where('recents.referrer', '<>', $website->domain)
+            ->where('recents.referrer', '<>', '')
+            ->groupBy('recents.referrer')
+            ->get()
+            ->keyBy('referrer_value');
+            
+        // Prepare result data structure
+        $result = [];
+        
+        foreach ($referrers as $referrer) {
+            $referrerRevenue = $revenueByReferrer->get($referrer->value);
+            $revenueAmount = $referrerRevenue ? $referrerRevenue->total_revenue : 0;
+            
+            $result[] = [
+                'value' => $referrer->value,
+                'visits' => $referrer->count, 
+                'revenue' => (float)$revenueAmount,
+                'revenuePerVisitor' => $referrer->count > 0 ? $revenueAmount / $referrer->count : 0
+            ];
+        }
+          return $result;
+    }
+
+    /**
+     * Get aggregated revenue by device
+     *
+     * @param $website
+     * @param $range
+     * @return array
+     */
+    private function getRevenueByDevice($website, $range)
+    {
+        // Get device stats
+        $devices = $this->getDevices($website, $range, null, null, 'count', 'desc')
+            ->limit(5)
+            ->get();
+
+        // Get revenue data by device using recent visitor data
+        $revenueByDevice = \DB::table('revenue')
+            ->selectRaw('recents.device as device_value, SUM(revenue.amount) as total_revenue')
+            ->join('recents', function($join) use ($website, $range) {
+                $join->on('recents.website_id', '=', 'revenue.website_id')
+                     ->whereRaw('DATE(recents.created_at) = revenue.date')
+                     ->where('recents.website_id', '=', $website->id)
+                     ->whereBetween('recents.created_at', [
+                         $range['from'] . ' 00:00:00', 
+                         $range['to'] . ' 23:59:59'
+                     ]);
+            })
+            ->where('revenue.website_id', '=', $website->id)
+            ->whereBetween('revenue.date', [$range['from'], $range['to']])
+            ->whereNotNull('recents.device')
+            ->groupBy('recents.device')
+            ->get()
+            ->keyBy('device_value');
+            
+        // Prepare result data structure
+        $result = [];
+        
+        foreach ($devices as $device) {
+            $deviceRevenue = $revenueByDevice->get($device->value);
+            $revenueAmount = $deviceRevenue ? $deviceRevenue->total_revenue : 0;
+            
+            $result[] = [
+                'value' => $device->value,
+                'visits' => $device->count, 
+                'revenue' => (float)$revenueAmount,
+                'revenuePerVisitor' => $device->count > 0 ? $revenueAmount / $device->count : 0
+            ];
+        }
+        
+        return $result;
+    }    /**
+     * Get aggregated revenue by screen resolution
+     *
+     * @param $website
+     * @param $range
+     * @return array
+     */
+    private function getRevenueByScreenResolution($website, $range)
+    {
+        // Get screen resolution stats
+        $screenResolutions = $this->getScreenResolutions($website, $range, null, null, 'count', 'desc')
+            ->limit(5)
+            ->get();
+
+        // Since the recents table doesn't have a resolution column,
+        // we cannot directly correlate revenue with screen resolution.
+        // For now, we'll return screen resolutions with zero revenue.
+        // To implement proper revenue tracking by resolution, the recents table
+        // would need a resolution column or a different tracking mechanism.
+        
+        // Prepare result data structure
+        $result = [];
+        
+        foreach ($screenResolutions as $resolution) {
+            $result[] = [
+                'value' => $resolution->value,
+                'visits' => $resolution->count, 
+                'revenue' => 0.0, // No revenue correlation available
+                'revenuePerVisitor' => 0.0
             ];
         }
         
@@ -2147,14 +2709,17 @@ class StatController extends Controller
             })
             ->toArray();
 
-        $trafficMap = [];
-        $revenueMap = [];
-        
-        // If the unit is 'hour', format needs to be different
+        $trafficMap = $revenueMap = [];
+          // If the unit is 'hour', format needs to be different
         if ($range['unit'] == 'hour') {
             // For hourly data, we need to create a map with all hours
-            $startDate = Carbon::createFromFormat('Y-m-d', $range['from'])->startOfDay();
-            $endDate = Carbon::createFromFormat('Y-m-d', $range['to'])->endOfDay();
+            try {
+                $startDate = Carbon::createFromFormat('Y-m-d', $range['from'])->startOfDay();
+                $endDate = Carbon::createFromFormat('Y-m-d', $range['to'])->endOfDay();
+            } catch (\Exception $e) {
+                $startDate = Carbon::parse($range['from'])->startOfDay();
+                $endDate = Carbon::parse($range['to'])->endOfDay();
+            }
               // If revenue data is requested, get the hourly revenue data
             $revenueData = [];
             if ($includeRevenue) {
@@ -2194,10 +2759,13 @@ class StatController extends Controller
             
             // Initialize all dates in the range with 0 values
             $trafficMap = $this->calcAllDates($range['from'], $range['to'], $range['unit'], $format, 0);
-            
-            // Fill in the actual traffic data
+              // Fill in the actual traffic data
             foreach ($data as $date => $count) {
-                $key = Carbon::createFromFormat('Y-m-d', $date)->format($format);
+                try {
+                    $key = Carbon::createFromFormat('Y-m-d', $date)->format($format);
+                } catch (\Exception $e) {
+                    $key = Carbon::parse($date)->format($format);
+                }
                 $trafficMap[$key] = (int)$count;
             }
             
@@ -2218,15 +2786,17 @@ class StatController extends Controller
                 
                 // Initialize revenue map with zeros
                 $revenueMap = $this->calcAllDates($range['from'], $range['to'], $range['unit'], $format, 0);
-                
-                // Fill in the actual revenue data
+                  // Fill in the actual revenue data
                 foreach ($revenueData as $date => $amount) {
-                    $key = Carbon::createFromFormat('Y-m-d', $date)->format($format);
+                    try {
+                        $key = Carbon::createFromFormat('Y-m-d', $date)->format($format);
+                    } catch (\Exception $e) {
+                        $key = Carbon::parse($date)->format($format);
+                    }
                     $revenueMap[$key] = (float)$amount;
                 }
             }
-        }
-        
+        }        
         if ($includeRevenue) {
             return [
                 'traffic' => $trafficMap,
@@ -2235,5 +2805,515 @@ class StatController extends Controller
         }
         
         return $trafficMap;
+    }
+
+    /**
+     * Get the list of search engine domains.
+     *
+     * @return array
+     */
+    private function getSearchEnginesList()
+    {
+        return [
+            'www.google.com',
+            'www.google.co.uk',
+            'www.google.co.in',
+            'www.google.de',
+            'www.google.fr',
+            'www.google.ca',
+            'www.google.com.au',
+            'www.google.it',
+            'www.google.es',
+            'www.google.com.br',
+            'www.google.ru',
+            'www.google.co.jp',
+            'www.google.com.mx',
+            'www.google.pl',
+            'www.google.com.tr',
+            'www.google.nl',
+            'www.google.com.ar',
+            'www.google.co.id',
+            'www.google.co.th',
+            'www.google.com.eg',
+            'www.bing.com',
+            'www.baidu.com',
+            'www.ecosia.org',
+            'search.yahoo.com',
+            'search.aol.com',
+            'yandex.ru',
+            'duckduckgo.com',
+            'www.ask.com',
+            'search.lycos.com',
+            'www.dogpile.com',
+            'www.metacrawler.com'
+        ];
+    }
+
+    /**
+     * Get the list of social network domains.
+     *
+     * @return array
+     */
+    private function getSocialNetworksList()
+    {
+        return [
+            'www.facebook.com',
+            'l.facebook.com',
+            'm.facebook.com',
+            'www.twitter.com',
+            'twitter.com',
+            't.co',
+            'www.instagram.com',
+            'l.instagram.com',
+            'www.linkedin.com',
+            'www.youtube.com',
+            'm.youtube.com',
+            'www.pinterest.com',
+            'www.reddit.com',
+            'out.reddit.com',
+            'www.snapchat.com',
+            'www.tiktok.com',
+            'www.whatsapp.com',
+            'web.whatsapp.com',
+            'www.telegram.org',
+            't.me',
+            'www.discord.com',
+            'discord.gg',
+            'www.twitch.tv',
+            'www.vk.com',
+            'away.vk.com',
+            'vk.me',
+            'www.tumblr.com',
+            'www.flickr.com',
+            'www.quora.com',
+            'www.medium.com',
+            'www.github.com',
+            'github.com',
+            'www.deviantart.com',
+            'www.behance.net',
+            'www.dribbble.com'
+        ];
+    }    /**
+     * Get revenue data by continents
+     */    private function getRevenueByContinents($website, $range, $perPage = null, $search = null, $searchBy = 'value', $sortBy = 'count', $sort = 'desc')
+    {
+        // Since the recents table doesn't have continent column, we need to derive it from country
+        // Using the same logic as the getContinents method that extracts continent from country data
+        $revenueQuery = DB::table('revenue')
+            ->selectRaw('
+                CASE 
+                    WHEN recents.country IS NOT NULL AND recents.country != ""
+                    THEN SUBSTRING_INDEX(recents.country, ":", 1)
+                    ELSE "Unknown"
+                END as continent, 
+                SUM(revenue.amount) as revenue
+            ')
+            ->join('recents', function($join) use ($website, $range) {
+                $join->on('recents.website_id', '=', 'revenue.website_id')
+                     ->whereRaw('DATE(recents.created_at) = revenue.date')
+                     ->where('recents.website_id', '=', $website->id)
+                     ->whereBetween('recents.created_at', [
+                         $range['from'] . ' 00:00:00', 
+                         $range['to'] . ' 23:59:59'
+                     ]);
+            })
+            ->where('revenue.website_id', $website->id)
+            ->whereBetween('revenue.date', [$range['from'], $range['to']])
+            ->whereNotNull('recents.country')
+            ->where('recents.country', '!=', '')
+            ->groupBy('continent');
+
+        if (!empty($search)) {
+            if ($searchBy == 'value') {
+                $revenueQuery->havingRaw('continent LIKE ?', ['%' . $search . '%']);
+            }
+        }
+
+        $revenueData = $revenueQuery->get()->keyBy('continent');
+        
+        return $revenueData->mapWithKeys(function ($item) {
+            return [$item->continent => $item->revenue];
+        });
+    }/**
+     * Get revenue data by cities
+     */    private function getRevenueByCities($website, $range, $perPage = null, $search = null, $searchBy = 'value', $sortBy = 'count', $sort = 'desc')
+    {
+        $revenueQuery = DB::table('revenue')
+            ->selectRaw('
+                CASE 
+                    WHEN SUBSTRING_INDEX(SUBSTRING_INDEX(recents.city, ":", 3), ":", -1) IS NOT NULL 
+                    THEN SUBSTRING_INDEX(SUBSTRING_INDEX(recents.city, ":", 3), ":", -1)
+                    ELSE "Unknown"
+                END as city, 
+                SUM(revenue.amount) as revenue
+            ')
+            ->join('recents', function($join) use ($website, $range) {
+                $join->on('recents.website_id', '=', 'revenue.website_id')
+                     ->whereRaw('DATE(recents.created_at) = revenue.date')
+                     ->where('recents.website_id', '=', $website->id)
+                     ->whereBetween('recents.created_at', [
+                         $range['from'] . ' 00:00:00', 
+                         $range['to'] . ' 23:59:59'
+                     ]);
+            })
+            ->where('revenue.website_id', $website->id)
+            ->whereBetween('revenue.date', [$range['from'], $range['to']])
+            ->whereNotNull('recents.city')
+            ->groupBy('city');
+
+        if (!empty($search)) {
+            if ($searchBy == 'value') {
+                $revenueQuery->havingRaw('city LIKE ?', ['%' . $search . '%']);
+            }
+        }
+
+        $revenueData = $revenueQuery->get()->keyBy('city');
+        
+        return $revenueData->mapWithKeys(function ($item) {
+            return [$item->city => $item->revenue];
+        });
+    }    /**
+     * Get revenue data by languages
+     */    private function getRevenueByLanguages($website, $range, $perPage = null, $search = null, $searchBy = 'value', $sortBy = 'count', $sort = 'desc')
+    {
+        $revenueQuery = DB::table('revenue')
+            ->selectRaw('recents.language as language, SUM(revenue.amount) as revenue')
+            ->join('recents', function($join) use ($website, $range) {
+                $join->on('recents.website_id', '=', 'revenue.website_id')
+                     ->whereRaw('DATE(recents.created_at) = revenue.date')
+                     ->where('recents.website_id', '=', $website->id)
+                     ->whereBetween('recents.created_at', [
+                         $range['from'] . ' 00:00:00', 
+                         $range['to'] . ' 23:59:59'
+                     ]);
+            })
+            ->where('revenue.website_id', $website->id)
+            ->whereBetween('revenue.date', [$range['from'], $range['to']])
+            ->whereNotNull('recents.language')
+            ->groupBy('recents.language');
+
+        if (!empty($search)) {
+            if ($searchBy == 'value') {
+                $revenueQuery->where('recents.language', 'like', '%' . $search . '%');
+            }
+        }
+
+        $revenueData = $revenueQuery->get()->keyBy('language');
+          return $revenueData->mapWithKeys(function ($item) {
+            return [$item->language => $item->revenue];
+        });
+    }
+
+    /**
+     * Get aggregated revenue by social network
+     *
+     * @param $website
+     * @param $range
+     * @return array
+     */
+    private function getRevenueBySocialNetwork($website, $range, $limit = null, $search = null, $searchBy = null, $sortBy = null, $sort = null)
+    {
+        // Get social networks stats with optional limit
+        $socialNetworksQuery = $this->getSocialNetworks($website, $range, $search, $searchBy, $sortBy ?: 'count', $sort ?: 'desc');
+        
+        if ($limit) {
+            $socialNetworks = $socialNetworksQuery->limit($limit)->get();
+        } else {
+            $socialNetworks = $socialNetworksQuery->get();
+        }
+
+        // Get the list of social network websites
+        $websites = $this->getSocialNetworksList();
+
+        // Get revenue data by social network using recent visitor data
+        $revenueBySocialNetwork = \DB::table('revenue')
+            ->selectRaw('recents.referrer as referrer_value, SUM(revenue.amount) as total_revenue')
+            ->join('recents', function($join) use ($website, $range) {
+                $join->on('recents.website_id', '=', 'revenue.website_id')
+                     ->whereRaw('DATE(recents.created_at) = revenue.date')
+                     ->where('recents.website_id', '=', $website->id)
+                     ->whereBetween('recents.created_at', [
+                         $range['from'] . ' 00:00:00', 
+                         $range['to'] . ' 23:59:59'
+                     ]);
+            })
+            ->where('revenue.website_id', '=', $website->id)
+            ->whereBetween('revenue.date', [$range['from'], $range['to']])
+            ->whereNotNull('recents.referrer')
+            ->whereIn('recents.referrer', $websites)
+            ->groupBy('recents.referrer')
+            ->get()
+            ->keyBy('referrer_value');
+            
+        // Prepare result data structure
+        $result = [];
+        
+        foreach ($socialNetworks as $socialNetwork) {
+            $socialNetworkRevenue = $revenueBySocialNetwork->get($socialNetwork->value);
+            $revenueAmount = $socialNetworkRevenue ? $socialNetworkRevenue->total_revenue : 0;
+            
+            $result[] = [
+                'value' => $socialNetwork->value,
+                'visits' => $socialNetwork->count, 
+                'revenue' => (float)$revenueAmount,
+                'revenuePerVisitor' => $socialNetwork->count > 0 ? $revenueAmount / $socialNetwork->count : 0
+            ];
+        }
+        
+        return $result;
+    }
+
+    /**
+     * Get aggregated revenue by search engine
+     *
+     * @param $website
+     * @param $range
+     * @return array
+     */
+    private function getRevenueBySearchEngine($website, $range, $limit = null, $search = null, $searchBy = null, $sortBy = null, $sort = null)
+    {
+        // Get search engines stats with optional limit
+        $searchEnginesQuery = $this->getSearchEngines($website, $range, $search, $searchBy, $sortBy ?: 'count', $sort ?: 'desc');
+        
+        if ($limit) {
+            $searchEngines = $searchEnginesQuery->limit($limit)->get();
+        } else {
+            $searchEngines = $searchEnginesQuery->get();
+        }
+
+        // Get the list of search engine websites
+        $websites = $this->getSearchEnginesList();
+
+        // Get revenue data by search engine using recent visitor data
+        $revenueBySearchEngine = \DB::table('revenue')
+            ->selectRaw('recents.referrer as referrer_value, SUM(revenue.amount) as total_revenue')
+            ->join('recents', function($join) use ($website, $range) {
+                $join->on('recents.website_id', '=', 'revenue.website_id')
+                     ->whereRaw('DATE(recents.created_at) = revenue.date')
+                     ->where('recents.website_id', '=', $website->id)
+                     ->whereBetween('recents.created_at', [
+                         $range['from'] . ' 00:00:00', 
+                         $range['to'] . ' 23:59:59'
+                     ]);
+            })
+            ->where('revenue.website_id', '=', $website->id)
+            ->whereBetween('revenue.date', [$range['from'], $range['to']])
+            ->whereNotNull('recents.referrer')
+            ->whereIn('recents.referrer', $websites)
+            ->groupBy('recents.referrer')
+            ->get()
+            ->keyBy('referrer_value');
+            
+        // Prepare result data structure
+        $result = [];
+        
+        foreach ($searchEngines as $searchEngine) {
+            $searchEngineRevenue = $revenueBySearchEngine->get($searchEngine->value);
+            $revenueAmount = $searchEngineRevenue ? $searchEngineRevenue->total_revenue : 0;
+            
+            $result[] = [
+                'value' => $searchEngine->value,
+                'visits' => $searchEngine->count, 
+                'revenue' => (float)$revenueAmount,
+                'revenuePerVisitor' => $searchEngine->count > 0 ? $revenueAmount / $searchEngine->count : 0
+            ];
+        }
+        
+        return $result;
+    }    /**
+     * Get aggregated revenue by campaign
+     *
+     * @param $website
+     * @param $range
+     * @return array
+     */
+    private function getRevenueByCampaign($website, $range, $limit = null, $search = null, $searchBy = null, $sortBy = null, $sort = null)
+    {
+        // Get campaigns stats with optional limit
+        $campaignsQuery = $this->getCampaigns($website, $range, $search, $searchBy, $sortBy ?: 'count', $sort ?: 'desc');
+        
+        if ($limit) {
+            $campaigns = $campaignsQuery->limit($limit)->get();
+        } else {
+            $campaigns = $campaignsQuery->get();
+        }
+
+        // For campaigns, since they are tracked as UTM parameters and stored in the campaign stat,
+        // we would need to correlate them with revenue data through visitor sessions.
+        // However, there's no direct relationship in the current database structure.
+        // For now, we'll return campaigns with zero revenue until proper tracking is implemented.
+        
+        // Prepare result data structure
+        $result = [];
+        
+        foreach ($campaigns as $campaign) {
+            $result[] = [
+                'value' => $campaign->value,
+                'visits' => $campaign->count, 
+                'revenue' => 0.0, // No revenue correlation available
+                'revenuePerVisitor' => 0.0
+            ];
+        }
+        
+        return $result;
+    }
+
+    /**
+     * Get aggregated revenue by page
+     *
+     * @param $website
+     * @param $range
+     * @return array
+     */
+    private function getRevenueByPage($website, $range, $limit = null, $search = null, $searchBy = null, $sortBy = null, $sort = null)
+    {
+        // Get pages stats with optional limit
+        $pagesQuery = $this->getPages($website, $range, $search, $searchBy, $sortBy ?: 'count', $sort ?: 'desc');
+        
+        if ($limit) {
+            $pages = $pagesQuery->limit($limit)->get();
+        } else {
+            $pages = $pagesQuery->get();
+        }        // Get revenue data by page using recent visitor data
+        $revenueByPage = \DB::table('revenue')
+            ->selectRaw('recents.page as page_value, SUM(revenue.amount) as total_revenue')
+            ->join('recents', function($join) use ($website, $range) {
+                $join->on('recents.website_id', '=', 'revenue.website_id')
+                     ->whereRaw('DATE(recents.created_at) = revenue.date')
+                     ->where('recents.website_id', '=', $website->id)
+                     ->whereBetween('recents.created_at', [
+                         $range['from'] . ' 00:00:00', 
+                         $range['to'] . ' 23:59:59'
+                     ]);
+            })
+            ->where('revenue.website_id', '=', $website->id)
+            ->whereBetween('revenue.date', [$range['from'], $range['to']])
+            ->whereNotNull('recents.page')
+            ->groupBy('recents.page')
+            ->get()
+            ->keyBy('page_value');
+            
+        // Prepare result data structure
+        $result = [];
+        
+        foreach ($pages as $page) {
+            $pageRevenue = $revenueByPage->get($page->value);
+            $revenueAmount = $pageRevenue ? $pageRevenue->total_revenue : 0;
+            
+            $result[] = [
+                'value' => $page->value,
+                'visits' => $page->count, 
+                'revenue' => (float)$revenueAmount,
+                'revenuePerVisitor' => $page->count > 0 ? $revenueAmount / $page->count : 0
+            ];
+        }
+        
+        return $result;
+    }
+
+    /**
+     * Get aggregated revenue by landing page
+     *
+     * @param $website
+     * @param $range
+     * @return array
+     */
+    private function getRevenueByLandingPage($website, $range, $limit = null, $search = null, $searchBy = null, $sortBy = null, $sort = null)
+    {
+        // Get landing pages stats with optional limit
+        $landingPagesQuery = $this->getLandingPages($website, $range, $search, $searchBy, $sortBy ?: 'count', $sort ?: 'desc');
+        
+        if ($limit) {
+            $landingPages = $landingPagesQuery->limit($limit)->get();
+        } else {
+            $landingPages = $landingPagesQuery->get();
+        }        // Get revenue data by landing page using recent visitor data
+        $revenueByLandingPage = \DB::table('revenue')
+            ->selectRaw('recents.page as landing_page_value, SUM(revenue.amount) as total_revenue')
+            ->join('recents', function($join) use ($website, $range) {
+                $join->on('recents.website_id', '=', 'revenue.website_id')
+                     ->whereRaw('DATE(recents.created_at) = revenue.date')
+                     ->where('recents.website_id', '=', $website->id)
+                     ->whereBetween('recents.created_at', [
+                         $range['from'] . ' 00:00:00', 
+                         $range['to'] . ' 23:59:59'
+                     ]);
+            })
+            ->where('revenue.website_id', '=', $website->id)
+            ->whereBetween('revenue.date', [$range['from'], $range['to']])
+            ->whereNotNull('recents.page')
+            ->groupBy('recents.page')
+            ->get()
+            ->keyBy('landing_page_value');
+            
+        // Prepare result data structure
+        $result = [];
+        
+        foreach ($landingPages as $landingPage) {
+            $landingPageRevenue = $revenueByLandingPage->get($landingPage->value);
+            $revenueAmount = $landingPageRevenue ? $landingPageRevenue->total_revenue : 0;
+            
+            $result[] = [
+                'value' => $landingPage->value,
+                'visits' => $landingPage->count, 
+                'revenue' => (float)$revenueAmount,
+                'revenuePerVisitor' => $landingPage->count > 0 ? $revenueAmount / $landingPage->count : 0
+            ];
+        }
+        
+        return $result;
+    }
+
+    /**
+     * Get aggregated revenue by exit page
+     *
+     * @param $website
+     * @param $range
+     * @return array
+     */
+    private function getRevenueByExitPage($website, $range, $limit = null, $search = null, $searchBy = null, $sortBy = null, $sort = null)
+    {
+        // Get exit pages stats with optional limit
+        $exitPagesQuery = $this->getExitPages($website, $range, $search, $searchBy, $sortBy ?: 'count', $sort ?: 'desc');
+        
+        if ($limit) {
+            $exitPages = $exitPagesQuery->limit($limit)->get();
+        } else {
+            $exitPages = $exitPagesQuery->get();
+        }        // Get revenue data by exit page using recent visitor data
+        $revenueByExitPage = \DB::table('revenue')
+            ->selectRaw('recents.page as exit_page_value, SUM(revenue.amount) as total_revenue')
+            ->join('recents', function($join) use ($website, $range) {
+                $join->on('recents.website_id', '=', 'revenue.website_id')
+                     ->whereRaw('DATE(recents.created_at) = revenue.date')
+                     ->where('recents.website_id', '=', $website->id)
+                     ->whereBetween('recents.created_at', [
+                         $range['from'] . ' 23:59:59',  // Note: using exit time for exit pages
+                         $range['to'] . ' 23:59:59'
+                     ]);
+            })
+            ->where('revenue.website_id', '=', $website->id)
+            ->whereBetween('revenue.date', [$range['from'], $range['to']])
+            ->whereNotNull('recents.page')
+            ->groupBy('recents.page')
+            ->get()
+            ->keyBy('exit_page_value');
+            
+        // Prepare result data structure
+        $result = [];
+        
+        foreach ($exitPages as $exitPage) {
+            $exitPageRevenue = $revenueByExitPage->get($exitPage->value);
+            $revenueAmount = $exitPageRevenue ? $exitPageRevenue->total_revenue : 0;
+            
+            $result[] = [
+                'value' => $exitPage->value,
+                'visits' => $exitPage->count, 
+                'revenue' => (float)$revenueAmount,
+                'revenuePerVisitor' => $exitPage->count > 0 ? $revenueAmount / $exitPage->count : 0
+            ];
+        }
+        
+        return $result;
     }
 }

@@ -1,0 +1,147 @@
+<!-- Main Navigation Bar for All Pages with Geist UI aesthetics -->
+<div id="main-navbar" class="header sticky-top shadow-sm bg-base-0 z-1025">
+    <div class="container-fluid">
+        <nav class="navbar navbar-expand-lg navbar-light px-0 py-2">
+            <!-- Logo on the left -->
+            <a href="{{ route(Auth::check() ? 'dashboard' : 'home') }}" aria-label="{{ config('settings.title') }}" class="navbar-brand p-0">
+                <div class="logo">
+                    <img src="{{ url('/') }}/uploads/brand/{{ (config('settings.dark_mode') == 1 ? config('settings.logo_dark') : config('settings.logo')) }}" alt="{{ config('settings.title') }}" data-theme-dark="{{ url('/') }}/uploads/brand/{{ config('settings.logo_dark') }}" data-theme-light="{{ url('/') }}/uploads/brand/{{ config('settings.logo') }}" data-theme-target="src">
+                </div>
+            </a>
+
+            @guest
+                <!-- Toggle button for mobile -->
+                <button class="navbar-toggler border-0 p-0" type="button" data-toggle="collapse" data-target="#header-navbar" aria-controls="header-navbar" aria-expanded="false" aria-label="{{ __('Toggle navigation') }}">
+                    <span class="navbar-toggler-icon"></span>
+                </button>
+
+                <!-- Navigation for guests -->
+                <div class="collapse navbar-collapse" id="header-navbar">
+                    <ul class="navbar-nav pt-2 p-lg-0 {{ (__('lang_dir') == 'rtl' ? 'mr-auto' : 'ml-auto') }}">
+                        @if(paymentProcessors())
+                            <li class="nav-item">
+                                <a class="nav-link" href="{{ route('pricing') }}" role="button">{{ __('Pricing') }}</a>
+                            </li>
+                        @endif
+
+                        <li class="nav-item">
+                            <a class="nav-link" href="{{ route('login') }}" role="button">{{ __('Login') }}</a>
+                        </li>
+
+                        @if(config('settings.registration'))
+                            <li class="nav-item d-flex align-items-center">
+                                <a class="btn btn-outline-primary" href="{{ route('register') }}" role="button">{{ __('Register') }}</a>
+                            </li>
+                        @endif
+                    </ul>
+                </div>
+            @else
+                <!-- Toggle button for mobile nav, now expands navbar instead of sidebar -->
+                <button class="navbar-toggler border-0 p-0" type="button" data-toggle="collapse" data-target="#header-navbar" aria-controls="header-navbar" aria-expanded="false" aria-label="{{ __('Toggle navigation') }}">
+                    <span class="navbar-toggler-icon"></span>
+                </button>
+
+                <!-- Navigation for authenticated users -->
+                <div class="collapse navbar-collapse" id="header-navbar">
+                    <ul class="navbar-nav {{ (__('lang_dir') == 'rtl' ? 'mr-auto' : 'ml-auto') }}">
+                        <!-- New Website Button -->
+                        <li class="nav-item mr-2">
+                            <a href="{{ route('websites.new') }}" class="btn btn-outline-primary d-flex align-items-center">
+                                @include('icons.add', ['class' => 'width-4 height-4 fill-current '.(__('lang_dir') == 'rtl' ? 'ml-2' : 'mr-2')]){{ __('New website') }}
+                            </a>
+                        </li>
+                        
+                        <!-- User dropdown -->
+                        <li class="nav-item dropdown">
+                            <a class="nav-link dropdown-toggle d-flex align-items-center" href="#" id="userDropdown" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                                <img src="{{ gravatar(Auth::user()->email, 80) }}" class="rounded-circle width-8 height-8 {{ (__('lang_dir') == 'rtl' ? 'ml-2' : 'mr-2') }}">
+                                <span class="d-none d-md-block">{{ Auth::user()->name }}</span>
+                            </a>
+                            
+                            <div class="dropdown-menu dropdown-menu-right border-0 shadow" aria-labelledby="userDropdown">
+                                <!-- Page views usage info -->
+                                <div class="pageviews-info">
+                                    <div class="d-flex flex-column">
+                                        <div class="small text-muted">
+                                            {{ __(':number of :total pageviews used.', ['number' => shortenNumber($pageviewsCount), 'total' => (Auth::user()->plan->features->pageviews < 0 ? '∞' : shortenNumber(Auth::user()->plan->features->pageviews))]) }}
+                                        </div>
+                                        <div class="pageviews-progress">
+                                            <div class="progress-bar bg-primary" role="progressbar" style="width: {{ (Auth::user()->plan->features->pageviews <= 0 ? 0 : (($pageviewsCount / Auth::user()->plan->features->pageviews) * 100)) }}%"></div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="dropdown-divider"></div>
+                                
+                                <!-- Dashboard link -->
+                                <a class="dropdown-item d-flex align-items-center" href="{{ route('dashboard') }}">
+                                    @include('icons.grid-view', ['class' => 'text-muted fill-current width-4 height-4 '.(__('lang_dir') == 'rtl' ? 'ml-3' : 'mr-3')])
+                                    {{ __('Dashboard') }}
+                                </a>
+                                
+                                <!-- Account link -->
+                                <a class="dropdown-item d-flex align-items-center" href="{{ route('account') }}">
+                                    @include('icons.profile', ['class' => 'text-muted fill-current width-4 height-4 '.(__('lang_dir') == 'rtl' ? 'ml-3' : 'mr-3')])
+                                    {{ __('Account') }}
+                                </a>
+                                
+                                <!-- Admin link for admins -->
+                                @if(Auth::user()->role == 1)
+                                    @if (!request()->is('admin/*'))
+                                        <a class="dropdown-item d-flex align-items-center" href="{{ route('admin.dashboard') }}">
+                                            @include('icons.supervised-user-circle', ['class' => 'text-muted fill-current width-4 height-4 '.(__('lang_dir') == 'rtl' ? 'ml-3' : 'mr-3')])
+                                            {{ __('Admin') }}
+                                        </a>
+                                    @else
+                                        <a class="dropdown-item d-flex align-items-center" href="{{ route('dashboard') }}">
+                                            @include('icons.account-circle', ['class' => 'text-muted fill-current width-4 height-4 '.(__('lang_dir') == 'rtl' ? 'ml-3' : 'mr-3')])
+                                            {{ __('User') }}
+                                        </a>
+                                    @endif
+                                @endif
+                                
+                                <!-- New Website link -->
+                                <a class="dropdown-item d-flex align-items-center" href="{{ route('websites.new') }}">
+                                    @include('icons.add', ['class' => 'text-muted fill-current width-4 height-4 '.(__('lang_dir') == 'rtl' ? 'ml-3' : 'mr-3')])
+                                    {{ __('New website') }}
+                                </a>
+                                
+                                <!-- Plan link -->
+                                <a class="dropdown-item d-flex align-items-center" href="{{ route('account.plan') }}">
+                                    @include('icons.package', ['class' => 'text-muted fill-current width-4 height-4 '.(__('lang_dir') == 'rtl' ? 'ml-3' : 'mr-3')])
+                                    {{ __('Plan') }}
+                                </a>
+                                
+                                @if(Auth::user()->plan->features->pageviews >= 0 && $pageviewsCount >= Auth::user()->plan->features->pageviews)
+                                <div class="dropdown-divider"></div>
+                                
+                                <div class="px-4 py-2">
+                                    @if(Auth::user()->can_track)
+                                        <div class="small text-danger">{{ __('Your account will be limited.') }}</div>
+                                        <a href="{{ route('pricing') }}" class="btn btn-sm btn-warning mt-2 btn-block">{{ __('Upgrade') }}</a>
+                                    @else
+                                        <div class="small text-danger">{{ __('Your account has been limited.') }}</div>
+                                        <a href="{{ route('pricing') }}" class="btn btn-sm btn-danger mt-2 btn-block">{{ __('Upgrade') }}</a>
+                                    @endif
+                                </div>
+                                @endif
+                                
+                                <div class="dropdown-divider"></div>
+                                
+                                <!-- Logout link -->
+                                <a class="dropdown-item d-flex align-items-center" href="{{ route('logout') }}" onclick="event.preventDefault(); document.getElementById('logout-form').submit();">
+                                    @include('icons.exit-to-app', ['class' => 'text-muted fill-current width-4 height-4 '.(__('lang_dir') == 'rtl' ? 'ml-3' : 'mr-3')])
+                                    {{ __('Logout') }}
+                                </a>
+                                <form id="logout-form" action="{{ route('logout') }}" method="POST" class="d-none">
+                                    @csrf
+                                </form>
+                            </div>
+                        </li>
+                    </ul>
+                </div>
+            @endguest
+        </nav>
+    </div>
+</div>
+
+<!-- Removed sidebar menu for cleaner interface -->

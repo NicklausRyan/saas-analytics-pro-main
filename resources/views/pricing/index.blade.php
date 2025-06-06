@@ -55,10 +55,7 @@
             <div class="container py-6 text-center">
                 <div><h3 class="d-inline-block mb-5">{{ __('Still have questions?') }}</h3></div>
 
-                <a href="{{ route('contact') }}" class="btn btn-primary btn-lg font-size-lg">{{ __('Contact us') }}</a>
-            </div>
+                <a href="{{ route('contact') }}" class="btn btn-primary btn-lg font-size-lg">{{ __('Contact us') }}</a>            </div>
         </div>
     </div>
 @endsection
-
-@include('shared.sidebars.user')

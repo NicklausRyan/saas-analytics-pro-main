@@ -5,15 +5,24 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 
 class DeveloperController extends Controller
-{
-    /**
-     * Show the Developer index page.
+{    /**
+     * Show the Combined Developer Documentation page.
      *
      * @return \Illuminate\Contracts\Foundation\Application|\Illuminate\Contracts\View\Factory|\Illuminate\View\View
      */
     public function index()
     {
-        return view('developers.index');
+        return redirect()->route('developers');
+    }
+    
+    /**
+     * Show the Combined Developer Documentation page with all sections.
+     *
+     * @return \Illuminate\Contracts\Foundation\Application|\Illuminate\Contracts\View\Factory|\Illuminate\View\View
+     */
+    public function combined()
+    {
+        return view('developers.combined');
     }
 
     /**

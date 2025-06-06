@@ -1,37 +1,35 @@
+{{-- Account Profile Content (without wrapper card) --}}
 @if(request()->is('admin/*'))
     @section('site_title', formatTitle([__('Edit'), __('User'), config('settings.title')]))
 @else
     @section('site_title', formatTitle([__('Profile'), config('settings.title')]))
 @endif
 
-@include('shared.breadcrumbs', ['breadcrumbs' => [
-    ['url' => request()->is('admin/*') ? route('admin.dashboard') : route('dashboard'), 'title' => request()->is('admin/*') ? __('Admin') : __('Home')],
-    ['url' => request()->is('admin/*') ? route('admin.users') : route('account'), 'title' => request()->is('admin/*') ? __('Users') : __('Account')],
-    ['title' => request()->is('admin/*') ? __('Edit') : __('Profile')]
-]])
+{{-- Only show breadcrumbs and headers when in admin context --}}
+@if(request()->is('admin/*'))
+    @include('shared.breadcrumbs', ['breadcrumbs' => [
+        ['url' => route('admin.dashboard'), 'title' => __('Admin')],
+        ['url' => route('admin.users'), 'title' => __('Users')],
+        ['title' => __('Edit')]
+    ]])
 
-<div class="d-flex">
-    <h1 class="h2 mb-3 text-break">{{ (request()->is('admin/*') ? __('Edit') : __('Profile')) }}</h1>
-</div>
+    <div class="d-flex">
+        <h1 class="h2 mb-3 text-break">{{ __('Edit') }}</h1>
+    </div>
 
-<div class="card border-0 shadow-sm @if(request()->is('admin/*')) mb-3 @endif">
-    <div class="card-header align-items-center">
-        <div class="row">
-            <div class="col">
-                <div class="font-weight-medium py-1">
-                    @if(request()->is('admin/*'))
+    <div class="card border-0 shadow-sm mb-3">
+        <div class="card-header align-items-center">
+            <div class="row">
+                <div class="col">
+                    <div class="font-weight-medium py-1">
                         {{ __('User') }}
                         @if($user->trashed())
                             <span class="badge badge-danger">{{ __('Disabled') }}</span>
                         @elseif(!$user->email_verified_at)
                             <span class="badge badge-secondary">{{ __('Pending') }}</span>
                         @endif
-                    @else
-                        {{ __('Profile') }}
-                    @endif
+                    </div>
                 </div>
-            </div>
-            @if(request()->is('admin/*'))
                 <div class="col-auto">
                     <div class="form-row">
                         <div class="col">
@@ -39,12 +37,13 @@
                         </div>
                     </div>
                 </div>
-            @endif
+            </div>
         </div>
-    </div>
+        <div class="card-body">
+@endif
 
-    <div class="card-body">
-        @include('shared.message')
+{{-- Account context content starts here --}}
+@include('shared.message')
 
         @if($user->getPendingEmail() && request()->is('admin/*') == false)
             <div class="alert alert-info d-flex" role="alert">
@@ -233,8 +232,13 @@
                             <div class="{{ (__('lang_dir') == 'rtl' ? 'mr-auto' : 'ml-auto') }} badge badge-primary">{{ number_format($stats[$link['stats']], 0, __('.'), __(',')) }}</div>
                         </div>
                     </div>
-                </a>
-            </div>
+                </a>            </div>
         @endforeach
+    </div>
+@endif
+
+{{-- Close admin card if in admin context --}}
+@if(request()->is('admin/*'))
+        </div>
     </div>
 @endif

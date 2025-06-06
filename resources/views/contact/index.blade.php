@@ -3,26 +3,43 @@
 @section('site_title', formatTitle([__('Contact'), config('settings.title')]))
 
 @section('head_content')
-
+<style>
+    /* Custom styles for contact form */
+    #contact-form .form-group {
+        margin-bottom: 0.85rem;
+    }
+    #contact-form .form-control {
+        font-size: 0.9rem;
+    }
+    #contact-form textarea.form-control {
+        resize: vertical;
+        min-height: 60px;
+        max-height: 120px;
+    }
+    #contact-form label {
+        font-size: 0.9rem;
+    }
+    #contact-form .btn {
+        font-size: 0.9rem;
+        padding: 0.35rem 1rem;
+    }
+    @media (max-width: 767.98px) {
+        .col-md-5.col-lg-4.mx-auto {
+            max-width: 85%;
+        }
+    }
+</style>
 @endsection
 
-@section('content')
-    <div class="bg-base-1 d-flex align-items-center flex-fill">
-        <div class="container h-100 py-6">
+@section('content')    <div class="bg-base-1 d-flex align-items-center flex-fill">        <div class="container h-100 py-6">
 
-            <div class="text-center d-block d-lg-none">
+            <div class="text-center">
                 <h1 class="h2 mb-3 d-inline-block">{{ __('Contact') }}</h1>
-                <div class="m-auto">
-                    <p class="text-muted font-weight-normal font-size-lg mb-0">{{ __('Get in touch with us.') }}</p>
-                </div>
-            </div>
-
-            <div class="row h-100 justify-content-center align-items-center mt-5 mt-lg-0">
-                <div class="col-12">
-                    <div class="card border-0 shadow-sm overflow-hidden">
+            </div>            <div class="row h-100 justify-content-center align-items-center mt-4">
+                <div class="col-12 col-md-5 col-lg-4 mx-auto"><div class="card border-0 shadow-sm overflow-hidden">
                         <div class="row no-gutters">
-                            <div class="col-12 col-lg-5">
-                                <div class="card-body p-lg-5">
+                            <div class="col-12">
+                                <div class="card-body p-3">
                                     @include('shared.message')
 
                                     <form method="POST" action="{{ route('contact') }}" id="contact-form">
@@ -46,11 +63,9 @@
                                                     <strong>{{ $errors->first('subject') }}</strong>
                                                 </span>
                                             @endif
-                                        </div>
-
-                                        <div class="form-group">
+                                        </div>                                        <div class="form-group">
                                             <label for="i-message">{{ __('Message') }}</label>
-                                            <textarea name="message" id="i-message" class="form-control{{ $errors->has('message') ? ' is-invalid' : '' }}">{{ old('message') }}</textarea>
+                                            <textarea name="message" id="i-message" class="form-control{{ $errors->has('message') ? ' is-invalid' : '' }}" rows="2">{{ old('message') }}</textarea>
                                             @if ($errors->has('message'))
                                                 <span class="invalid-feedback" role="alert">
                                                     <strong>{{ $errors->first('message') }}</strong>
@@ -59,11 +74,10 @@
                                         </div>
 
                                         @if(config('settings.captcha_contact'))
-                                            {!! NoCaptcha::displaySubmit('contact-form', __('Send'), ['data-theme' => (config('settings.dark_mode') == 1 ? 'dark' : 'light'), 'data-size' => 'invisible', 'class' => 'btn btn-block btn-primary']) !!}
+                                            {!! NoCaptcha::displaySubmit('contact-form', __('Send'), ['data-theme' => (config('settings.dark_mode') == 1 ? 'dark' : 'light'), 'data-size' => 'invisible', 'class' => 'btn btn-primary']) !!}
 
-                                            {!! NoCaptcha::renderJs(__('lang_code')) !!}
-                                        @else
-                                            <button type="submit" class="btn btn-block btn-primary">
+                                            {!! NoCaptcha::renderJs(__('lang_code')) !!}                                        @else
+                                            <button type="submit" class="btn btn-primary">
                                                 {{ __('Send') }}
                                             </button>
                                         @endif
@@ -74,22 +88,7 @@
                                             </span>
                                         @endif
                                     </form>
-                                </div>
-                            </div>
-                            <div class="col-12 col-lg-7 bg-dark d-none d-lg-flex flex-fill background-size-cover background-position-center" style="background-image: url({{ asset('images/contact.svg') }})">
-                                <div class="card-body p-lg-5 d-flex flex-column flex-fill position-absolute top-0 right-0 bottom-0 left-0">
-                                    <div class="d-flex align-items-center d-flex flex-fill">
-                                        <div class="text-light {{ (__('lang_dir') == 'rtl' ? 'mr-5' : 'ml-5') }}">
-                                            <div class="h2 font-weight-bold">
-                                                {{ __('Contact') }}
-                                            </div>
-                                            <div class="font-size-lg font-weight-medium">
-                                                {{ __('Get in touch with us.') }}
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
+                                </div>                            </div>
                         </div>
                     </div>
                 </div>

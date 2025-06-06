@@ -1,23 +1,8 @@
-@section('site_title', formatTitle([__('Payments'), config('settings.title')]))
-
-@include('shared.breadcrumbs', ['breadcrumbs' => [
-    ['url' => route('dashboard'), 'title' => __('Home')],
-    ['url' => route('account'), 'title' => __('Account')],
-    ['title' => __('Payments')]
-]])
-
-<div class="d-flex">
-    <div class="flex-grow-1">
-        <h1 class="h2 mb-3 d-inline-block">{{ __('Payments') }}</h1>
-    </div>
-</div>
+{{-- @section('site_title', formatTitle([__('Payments'), config('settings.title')])) --}}
 
 <div class="card border-0 shadow-sm">
-    <div class="card-header align-items-center">
-        <div class="row">
-            <div class="col"><div class="font-weight-medium py-1">{{ __('Payments') }}</div></div>
-            <div class="col-auto">
-                <form method="GET" action="{{ route('account.payments') }}" class="d-md-flex">
+    <div class="card-body">
+        <form method="GET" action="{{ route('account.payments') }}" class="d-md-flex mb-3">
                     <div class="input-group input-group-sm">
                         <input class="form-control" name="search" placeholder="{{ __('Search') }}" value="{{ app('request')->input('search') }}">
                         <div class="input-group-append">
@@ -108,9 +93,7 @@
                                             @endforeach
                                         </select>
                                     </div>
-                                </div>
-
-                                <div class="dropdown-divider my-0"></div>
+                                </div>                                <div class="dropdown-divider my-0"></div>
 
                                 <div class="px-4 py-3">
                                     <button type="submit" class="btn btn-primary btn-sm btn-block">{{ __('Search') }}</button>
@@ -119,10 +102,7 @@
                         </div>
                     </div>
                 </form>
-            </div>
-        </div>
-    </div>
-    <div class="card-body">
+
         @include('shared.message')
 
         @if(count($payments) == 0)

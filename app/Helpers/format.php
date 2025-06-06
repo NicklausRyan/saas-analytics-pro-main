@@ -162,6 +162,39 @@ function formatFlag($value)
 }
 
 /**
+ * Format country name from stored value.
+ * Handles both "CODE:Country Name" and just "CODE" formats.
+ *
+ * @param   string   $value  The country value from database
+ * @return  string
+ */
+function formatCountryName($value)
+{
+    if (empty($value)) {
+        return __('Unknown');
+    }
+
+    $country = explode(':', $value);
+    
+    // If we have country name after colon, use it
+    if (isset($country[1]) && !empty(trim($country[1]))) {
+        return trim($country[1]);
+    }
+    
+    // If we only have country code, look it up in config
+    if (isset($country[0]) && !empty($country[0])) {
+        $countryCode = strtoupper(trim($country[0]));
+        $countries = config('countries');
+        
+        if (isset($countries[$countryCode])) {
+            return $countries[$countryCode];
+        }
+    }
+    
+    return __('Unknown');
+}
+
+/**
  * Convert a number into a readable one.
  *
  * @param   int   $number  The number to be transformed
@@ -179,4 +212,26 @@ function shortenNumber($number)
     }
 
     return $number;
+}
+
+/**
+ * Safely parse a date string using Carbon with error handling.
+ *
+ * @param   string   $dateString  The date string to be parsed
+ * @param   string   $format      The format to use for parsing (default: 'Y-m-d')
+ * @return  \Carbon\Carbon
+ */
+function safeCreateFromFormat($dateString, $format = 'Y-m-d')
+{
+    try {
+        // Clean the input and validate format
+        $dateString = trim($dateString);
+        if (preg_match('/^\d{4}-\d{2}-\d{2}$/', $dateString)) {
+            return \Carbon\Carbon::createFromFormat($format, $dateString);
+        } else {
+            return \Carbon\Carbon::parse($dateString);
+        }
+    } catch (\Exception $e) {
+        return \Carbon\Carbon::now();
+    }
 }

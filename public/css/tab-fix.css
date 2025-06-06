@@ -1,0 +1,78 @@
+/* Tab fix for account page */
+/* Ensure consistent tab structure */
+.account-container .row {
+    display: flex;
+    flex-wrap: wrap;
+}
+
+/* Desktop layout */
+@media (min-width: 992px) {
+    /* Proper sidebar navigation */
+    .account-container .side-nav-container {
+        position: sticky;
+        top: 1rem;
+        height: 100%;
+    }
+    
+    /* Sidebar layout */
+    .account-container .side-nav {
+        display: flex;
+        flex-direction: column;
+    }
+    
+    /* Content layout */
+    .account-container #account-tabs-content {
+        display: block !important;
+        width: 100%;
+    }
+    
+    /* Ensure tab content displays correctly */
+    .account-container .tab-content {
+        width: 100%;
+        display: block;
+    }
+    
+    /* Fix individual tab panes */
+    .account-container .tab-pane {
+        width: 100%;
+        position: relative;
+    }
+    
+    /* Row arrangement for sidebar and content */
+    .account-container .row {
+        display: flex;
+    }
+    
+    /* Sidebar column sizing */
+    .account-container .col-lg-3 {
+        flex: 0 0 250px;
+        max-width: 250px;
+    }
+    
+    /* Content column sizing */
+    .account-container .col-lg-9 {
+        flex: 1;
+        max-width: calc(100% - 250px);
+    }
+}
+
+/* Tab visibility */
+.tab-pane {
+    display: none;
+    width: 100%;
+}
+
+.tab-pane.active, 
+.tab-pane.show.active {
+    display: block;
+}
+
+/* Fade animation */
+.tab-pane.fade {
+    opacity: 0;
+    transition: opacity .15s linear;
+}
+
+.tab-pane.fade.show {
+    opacity: 1;
+}

@@ -1,19 +1,6 @@
-@section('site_title', formatTitle([__('API'), config('settings.title')]))
-
-@include('shared.breadcrumbs', ['breadcrumbs' => [
-    ['url' => route('dashboard'), 'title' => __('Home')],
-    ['url' => route('account'), 'title' => __('Account')],
-    ['title' => __('API')]
-]])
-
-<h1 class="h2 mb-3 d-inline-block">{{ __('API') }}</h1>
+{{-- @section('site_title', formatTitle([__('API'), config('settings.title')])) --}}
 
 <div class="card border-0 shadow-sm">
-    <div class="card-header align-items-center">
-        <div class="row">
-            <div class="col"><div class="font-weight-medium py-1">{{ __('API') }}</div></div>
-        </div>
-    </div>
     <div class="card-body">
         @include('shared.message')
 

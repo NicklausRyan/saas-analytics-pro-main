@@ -1,7 +1,7 @@
 @extends('layouts.wrapper')
 
 @section('body')
-    <body class="d-flex flex-column">
+    <body class="d-flex flex-column @yield('body_class')">
         @guest
             @if(config('settings.announcement_guest'))
                 @include('shared.announcement', ['message' => config('settings.announcement_guest'), 'type' => config('settings.announcement_guest_type'), 'id' => config('settings.announcement_guest_id')])
@@ -14,7 +14,7 @@
 
         @include('shared.header')
 
-        <div class="d-flex flex-column flex-fill @auth content @endauth">
+        <div class="d-flex flex-column flex-fill">
             @yield('content')
 
             @include('shared.modals.confirmation')

@@ -1,1 +1,71 @@
-!function(e){"use strict";function t(t,r){var n=document.getElementById("ZwSg9rf6GA");if("true"===n.getAttribute("data-dnt")&&navigator.doNotTrack)return!1;var a={};a.referrer=r||e.document.referrer,a.page=e.location.href.replace(/#.+$/,""),a.screen_resolution=screen.width+"x"+screen.height,t&&(a.event=t);var o=new XMLHttpRequest;o.open("POST",n.getAttribute("data-host")+"/api/event",!0),o.setRequestHeader("Content-Type","application/json; charset=utf-8"),o.send(JSON.stringify(a))}try{var r=history.pushState;history.pushState=function(){var n=e.location.href.replace(/#.+$/,"");r.apply(history,arguments),t(null,n)},e.onpopstate=function(e){t(null)},e.pa={},e.pa.track=t,t(null)}catch(e){console.log(e.message)}}(window);
+! function(w) {
+    'use strict';
+
+    /**
+     * Send the request
+     * @param event
+     * @param referrer Needed for SPAs dynamic history push
+     */
+    function sendRequest(event, referrer) {
+        // Tracking code element
+        var trackingCode = document.getElementById('ZwSg9rf6GA');
+
+        if (trackingCode.getAttribute('data-dnt') === 'true') {
+            // If the user's has DNT enabled
+            if (navigator.doNotTrack) {
+                // Cancel the request
+                return false;
+            }
+        }
+
+        // Request parameters
+        var params = {};
+
+        // If a referrer is set
+        if (referrer) {
+            params.referrer = referrer;
+        } else {
+            // Get the referrer
+            params.referrer = w.document.referrer;
+        }
+
+        // Get the current page
+        params.page = w.location.href.replace(/#.+$/,'');
+
+        // Get the screen resolution
+        params.screen_resolution = screen.width + 'x' + screen.height;
+
+        if (event) {
+            params.event = event;
+        }
+
+        // Send the request
+        var request = new XMLHttpRequest();
+        request.open("POST", trackingCode.getAttribute('data-host') + "/api/event", true),
+        request.setRequestHeader("Content-Type", "application/json; charset=utf-8"),
+        request.send(JSON.stringify(params));
+    }
+
+    try {
+        // Rewrite the push state function to detect path changes in SPAs
+        var pushState = history.pushState;
+        history.pushState = function () {
+            var referrer = w.location.href.replace(/#.+$/,'');
+            pushState.apply(history, arguments);
+            sendRequest(null, referrer);
+        };
+
+        // Listen to the browser's back & forward buttons
+        w.onpopstate = function(event) {
+            sendRequest(null);
+        };
+
+        // Define the event method
+        w.pa = {}; w.pa.track = sendRequest;
+
+        // Send the initial request
+        sendRequest(null);
+    } catch (e) {
+        console.log(e.message);
+    }
+}(window);
