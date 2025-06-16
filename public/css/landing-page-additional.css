@@ -1,0 +1,78 @@
+/* Additional Landing Page Fixes */
+
+/* Tab content fixes */
+.tab-content {
+    margin-top: 2rem !important;
+}
+
+.tab-pane.fade.show.active {
+    animation: fadeIn 0.5s ease-in;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+/* Feature tab content alignment */
+.tab-pane .list-unstyled li {
+    display: flex;
+    align-items: flex-start;
+}
+
+.tab-pane .bg-success.rounded-circle.mr-3 {
+    margin-top: 0.5rem;
+    width: 8px !important;
+    height: 8px !important;
+    background-color: #28a745 !important;
+}
+
+/* Pricing section improvements */
+.pricing-plans {
+    margin-top: 2rem;
+}
+
+.bg-white.p-5.border-radius-lg {
+    border-radius: 16px !important;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
+}
+
+.bg-gradient-primary.p-6.border-radius-lg {
+    border-radius: 16px !important;
+    box-shadow: 0 8px 20px rgba(0, 123, 255, 0.2);
+}
+
+/* Consistent button heights */
+.btn-lg {
+    min-height: 52px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* Improved icon alignment */
+.btn svg,
+.btn img {
+    margin-left: 0.5rem;
+}
+
+/* Fix various spacing issues */
+.mt-6 {
+    margin-top: 3.5rem !important;
+}
+
+.mb-6 {
+    margin-bottom: 3.5rem !important;
+}
+
+.py-8 {
+    padding-top: 6rem !important;
+    padding-bottom: 6rem !important;
+}
+
+/* Responsive image size */
+.img-fluid {
+    max-width: 100%;
+    height: auto;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1) !important;
+}

@@ -11,7 +11,7 @@
 
 <div class="row flex-column-reverse flex-md-row justify-content-center">
     @foreach($plans as $plan)
-        <div class="col-12 col-md-6 col-xl-4 pt-4">
+        <div class="col-12 col-md-6 col-lg-5 pt-4 mx-2">
             <div class="card border-0 shadow-sm rounded h-100 overflow-hidden plan">
                 <div class="card-body p-4 d-flex flex-column">
                     <div class="mb-3">

@@ -7,22 +7,23 @@
 @endsection
 
 @section('content')
-<div class="bg-base-1 d-flex align-items-start align-items-lg-center flex-fill">
-    <div class="container h-100 py-6">
-
-        <div class="text-center d-block d-lg-none">
-            <h1 class="h2 mb-3 d-inline-block">{{ __('Login') }}</h1>
-            <div class="m-auto">
-                <p class="text-muted font-weight-normal font-size-lg mb-0">{{ __('Welcome back.') }}</p>
-            </div>
-        </div>
-
-        <div class="row h-100 justify-content-center align-items-center mt-5 mt-lg-0">
-            <div class="col-12">
-                <div class="card border-0 shadow-sm overflow-hidden">
-                    <div class="row no-gutters">
-                        <div class="col-12 col-lg-5">
-                            <div class="card-body p-lg-5">
+<div class="bg-base-1 d-flex align-items-center justify-content-center flex-fill">
+    <div class="container py-6">
+        <div class="row justify-content-center">
+            <div class="col-12 col-lg-10 col-xl-8">                <div class="card border-0 shadow-sm overflow-hidden">
+                    <div class="row no-gutters">                        <!-- Left panel - Welcome message -->
+                        <div class="col-12 col-lg-6 bg-primary d-none d-lg-flex flex-fill">
+                            <div class="card-body p-lg-5 d-flex flex-column justify-content-center align-items-center text-white">
+                                <div>
+                                    <h1 class="h2 font-weight-bold mb-3">{{ __('Login') }}</h1>
+                                    <p class="font-weight-normal font-size-lg mb-0">{{ __('Welcome back.') }}</p>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Right panel - Login form -->
+                        <div class="col-12 col-lg-6">
+                            <div class="card-body p-4 p-lg-5">
                                 <form method="POST" action="{{ route('login') }}">
                                     @csrf
 
@@ -68,27 +69,7 @@
                                     <button type="submit" class="btn btn-block btn-primary py-2">
                                         {{ __('Login') }}
                                     </button>
-                                </form>
-                            </div>
-                            @if(config('settings.registration'))
-                                <div class="card-footer bg-base-2 border-0">
-                                    <div class="text-center text-muted my-2">{{ __('Don\'t have an account?') }} <a href="{{ route('register') }}" role="button">{{ __('Register') }}</a></div>
-                                </div>
-                            @endif
-                        </div>
-                        <div class="col-12 col-lg-7 bg-dark d-none d-lg-flex flex-fill background-size-cover background-position-center" style="background-image: url({{ asset('images/login.svg') }})">
-                            <div class="card-body p-lg-5 d-flex flex-column flex-fill position-absolute top-0 right-0 bottom-0 left-0">
-                                <div class="d-flex align-items-center d-flex flex-fill">
-                                    <div class="text-light {{ (__('lang_dir') == 'rtl' ? 'mr-5' : 'ml-5') }}">
-                                        <div class="h2 font-weight-bold">
-                                            {{ __('Login') }}
-                                        </div>
-                                        <div class="font-size-lg font-weight-medium">
-                                            {{ __('Welcome back.') }}
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
+                                </form>                            </div>
                         </div>
                     </div>
                 </div>

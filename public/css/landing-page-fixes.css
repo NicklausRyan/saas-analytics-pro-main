@@ -1,0 +1,469 @@
+/* Landing page optimization and fixes */
+
+/* Improved spacing and padding for sections */
+.bg-base-0.position-relative.pt-10.pb-10,
+.bg-base-1.py-8, 
+.bg-base-0.py-8 {
+    padding-top: 5rem !important;
+    padding-bottom: 5rem !important;
+}
+
+/* Responsive container sizing */
+@media (min-width: 1200px) {
+    .container {
+        max-width: 1140px;
+    }
+}
+
+/* Global text improvements */
+body, .text-muted {
+    font-weight: 400;
+}
+
+h1, h2, h3, h4, h5, .font-weight-bold {
+    font-weight: 600 !important;
+}
+
+/* Ensure proper spacing */
+.mb-4 {
+    margin-bottom: 1.5rem !important;
+}
+
+.mb-5 {
+    margin-bottom: 2rem !important;
+}
+
+/* Hero section improvements */
+.position-absolute.top-0.left-0.right-0.bottom-0.z-0.opacity-10 {
+    background-size: 800px !important; /* Smaller map texture size */
+    opacity: 0.08 !important;
+}
+
+.badge.badge-pill.badge-primary {
+    font-weight: 500;
+    letter-spacing: 0.5px;
+    padding: 0.4rem 1rem;
+}
+
+.display-3 {
+    line-height: 1.2;
+    font-weight: 600 !important;
+    font-size: 2.75rem;
+}
+
+/* Fix for hero image border radius - NO shadows */
+.position-relative img.img-fluid {
+    border-radius: 12px;
+    max-width: 100%;
+    height: auto;
+}
+
+/* Improved tab styling - full width tabs with underline highlights ONLY */
+.nav-pills-rounded {
+    padding: 0;
+    margin-bottom: 1.5rem;
+    background-color: transparent;
+    border-radius: 0;
+    width: 100%;
+    display: flex;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+html.dark .nav-pills-rounded {
+    background-color: transparent;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.nav-pills-rounded .nav-item {
+    margin: 0;
+    flex: 1; /* Make tabs take equal width */
+}
+
+.nav-pills-rounded .nav-link {
+    border-radius: 0;
+    padding: 12px 16px;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    justify-content: center; /* Center content in tabs */
+    border: none;
+    text-align: center;
+    width: 100%;
+    white-space: nowrap;
+    background-color: transparent !important;
+    position: relative;
+    border-bottom: 3px solid transparent;
+    color: #6b7280 !important; /* Gray for inactive tabs */
+}
+
+.nav-pills-rounded .nav-link:hover {
+    color: #2563eb !important;
+    background-color: transparent !important;
+    border-bottom-color: rgba(37, 99, 235, 0.3);
+}
+
+.nav-pills-rounded .nav-link.active {
+    color: #2563eb !important; /* Blue for active tab */
+    background-color: transparent !important;
+    border-bottom-color: #2563eb;
+    font-weight: 600;
+}
+
+.nav-pills-rounded .nav-link.active {
+    color: #2563eb !important;
+    background-color: transparent;
+    border-bottom-color: #2563eb;
+    box-shadow: none;
+}
+
+/* Icons in tabs */
+.nav-pills-rounded .nav-link svg,
+.nav-pills-rounded .nav-link img {
+    margin-right: 8px;
+    width: 18px;
+    height: 18px;
+}
+
+/* Tab content improvements - no animations */
+.tab-content {
+    margin-top: 2rem;
+}
+
+/* Card styling enhancement - NO shadows, NO animations */
+.card {
+    border: 1px solid rgba(0, 0, 0, 0.05);
+    height: 100%;
+    border-radius: 12px;
+    background-color: #fff;
+    box-shadow: none !important;
+}
+
+.card:hover {
+    transform: none !important;
+    box-shadow: none !important;
+}
+
+.card-body {
+    padding: 1.75rem;
+}
+
+/* Data cards in feature sections - NO animations, NO shadows */
+.bg-white.p-4.border-radius-lg.shadow-sm {
+    border-radius: 12px;
+    border: 1px solid rgba(0, 0, 0, 0.05);
+    box-shadow: none !important;
+}
+
+.bg-white.p-4.border-radius-lg.shadow-sm:hover {
+    transform: none !important;
+    box-shadow: none !important;
+}
+
+/* Visual indicators */
+.bg-success.rounded-circle {
+    width: 8px !important;
+    height: 8px !important;
+    background-color: #38c172 !important;
+}
+
+/* Fix list spacing in cards */
+.list-group-item {
+    padding: 0.75rem 0;
+    border-color: rgba(0, 0, 0, 0.05);
+}
+
+html.dark .list-group-item {
+    border-color: rgba(255, 255, 255, 0.1);
+}
+
+/* Fix sizing of hero image */
+.position-relative img.img-fluid {
+    border-radius: 12px;
+    max-width: 100%;
+    height: auto;
+}
+
+/* 4:3 aspect ratio for all feature images and hero image */
+.aspect-ratio-4-3 {
+    aspect-ratio: 4/3;
+    overflow: hidden;
+    border-radius: 12px;
+}
+
+.aspect-ratio-4-3 img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+/* Hero section layout adjustments */
+.hero-content {
+    max-width: 480px;
+}
+
+/* Ensure proper mobile behavior for hero layout */
+@media (max-width: 991px) {
+    .hero-content {
+        max-width: 100%;
+        text-align: left;
+    }
+    
+    .d-flex.flex-column.flex-sm-row.align-items-start {
+        align-items: start !important;
+    }
+}
+
+@media (max-width: 575px) {
+    .hero-content {
+        text-align: left;
+    }
+    
+    .d-flex.flex-column.flex-sm-row.align-items-start {
+        flex-direction: column !important;
+        align-items: start !important;
+    }
+    
+    .btn.ml-sm-3 {
+        margin-left: 0 !important;
+        margin-top: 0.75rem !important;
+    }
+}
+
+/* Testimonial section improvements - NO shadows */
+.card.border-0.shadow-sm.h-100 {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    box-shadow: none !important;
+    border: 1px solid rgba(0, 0, 0, 0.05) !important;
+}
+
+.card-body.p-5 {
+    padding: 2rem !important;
+}
+
+.card-body.p-5 blockquote {
+    flex-grow: 1;
+    margin-bottom: 1.5rem;
+    margin-left: 0 !important;
+    padding-left: 0 !important;
+}
+
+/* Remove indentation from testimonial text */
+.card-body blockquote,
+.card-body blockquote p {
+    margin-left: 0 !important;
+    padding-left: 0 !important;
+    text-indent: 0 !important;
+}
+
+/* Star rating styling */
+.text-warning {
+    color: #ffc107 !important;
+}
+
+.svg.fill-current.text-warning {
+    width: 16px;
+    height: 16px;
+}
+
+/* Avatar styling - NO shadows */
+.rounded-circle.d-flex.align-items-center.justify-content-center {
+    width: 48px !important;
+    height: 48px !important;
+    box-shadow: none !important;
+}
+
+/* Specific styling for Michael Johnson avatar */
+.bg-info.rounded-circle {
+    background-color: #17a2b8 !important; /* Bootstrap info blue */
+}
+
+.bg-info.rounded-circle .text-white {
+    color: #ffffff !important;
+    font-weight: 600;
+}
+
+/* Dark mode fixes - MINIMAL changes, only text colors */
+html.dark .text-dark {
+    color: var(--dark-text) !important;
+}
+
+html.dark .text-muted {
+    color: var(--dark-text-secondary) !important;
+}
+
+html.dark .nav-pills-rounded .nav-link {
+    color: #9ca3af !important; /* Light gray for inactive tabs in dark mode */
+}
+
+html.dark .nav-pills-rounded .nav-link:hover {
+    color: #3b82f6 !important; /* Lighter blue for hover in dark mode */
+    background-color: transparent !important;
+    border-bottom-color: rgba(59, 130, 246, 0.3);
+}
+
+html.dark .nav-pills-rounded .nav-link.active {
+    color: #3b82f6 !important; /* Lighter blue for active tab in dark mode */
+    background-color: transparent !important;
+    border-bottom-color: #3b82f6;
+}
+
+/* Dark mode card borders only */
+html.dark .card {
+    border-color: rgba(255, 255, 255, 0.1) !important;
+}
+
+html.dark .card.border-0.shadow-sm.h-100 {
+    border: 1px solid rgba(255, 255, 255, 0.1) !important;
+}
+
+html.dark .bg-white.p-4.border-radius-lg.shadow-sm {
+    border-color: rgba(255, 255, 255, 0.1) !important;
+}
+
+html.dark .list-group-item {
+    border-color: rgba(255, 255, 255, 0.1) !important;
+}
+
+/* Fix for mobile display */
+@media (max-width: 767px) {
+    .bg-base-0.position-relative.pt-10.pb-10,
+    .bg-base-1.py-8, 
+    .bg-base-0.py-8 {
+        padding-top: 3rem !important;
+        padding-bottom: 3rem !important;
+    }
+    
+    .display-3 {
+        font-size: 2rem;
+    }    .nav-pills-rounded {
+        overflow-x: auto;
+        flex-wrap: nowrap;
+        justify-content: start;
+        -webkit-overflow-scrolling: touch;
+        scrollbar-width: none; /* Firefox */
+        padding: 6px;
+        width: 100%;
+    }
+    
+    .nav-pills-rounded::-webkit-scrollbar {
+        display: none; /* Chrome, Safari, Edge */
+    }
+    
+    .nav-pills-rounded .nav-item {
+        flex: 1 1 0%; /* Equal width tabs on mobile too */
+        margin: 0 1px;
+        min-width: 0;
+    }
+    
+    .nav-pills-rounded .nav-link {
+        white-space: nowrap;
+        padding: 10px 12px;
+        font-size: 13px;
+        justify-content: center;
+        text-align: center;
+    }
+    
+    .nav-pills-rounded .nav-link svg,
+    .nav-pills-rounded .nav-link img {
+        margin-right: 4px;
+        width: 16px;
+        height: 16px;
+    }
+    
+    /* Better mobile spacing */
+    .container {
+        padding-left: 20px;
+        padding-right: 20px;
+    }
+    
+    /* Better mobile button sizing */
+    .btn-lg {
+        padding: 0.5rem 1rem !important;
+        font-size: 1rem !important;
+    }
+    
+    /* Fix card spacing on mobile */
+    .card {
+        margin-bottom: 1.5rem;
+    }
+    
+    /* Adjust tab content spacing */
+    .tab-content .row {
+        margin-top: 1rem;
+    }
+    
+    /* Adjust feature tab content for mobile */
+    .tab-pane .col-lg-6 {
+        margin-bottom: 1.5rem;
+    }
+    
+    /* Improve list readability on mobile */
+    .list-unstyled li {
+        margin-bottom: 0.75rem;
+    }
+    
+    /* Better mobile typography */
+    h1.mb-4.font-weight-bold {
+        font-size: 1.75rem;
+    }
+    
+    h2.h1.mb-4.font-weight-bold {
+        font-size: 1.75rem;
+    }
+    
+    h3.h2.mb-4.font-weight-bold {
+        font-size: 1.5rem;
+    }
+    
+    .font-size-lg {
+        font-size: 1rem !important;
+    }
+    
+    .font-size-xl {
+        font-size: 1.125rem !important;
+    }
+    
+    /* Fix mobile testimonial card height */
+    .card.border-0.shadow-sm.h-100 {
+        height: auto;
+    }
+}
+
+/* Button improvements - NO animations */
+.btn {
+    border-radius: 6px;
+}
+
+.btn:hover,
+.btn-primary:hover {
+    transform: none !important;
+    box-shadow: none !important;
+}
+
+/* Pricing toggle improvement - NO animations */
+.btn-group-toggle .btn {
+    padding: 0.5rem 1.25rem;
+}
+
+/* Remove ALL shadows globally */
+.shadow-sm,
+.shadow,
+.shadow-lg {
+    box-shadow: none !important;
+}
+
+/* Remove ALL transitions and animations */
+*,
+*::before,
+*::after {
+    transition: none !important;
+    animation: none !important;
+    transform: none !important;
+}
+
+/* Exception for smooth scrolling only */
+html {
+    scroll-behavior: smooth;
+}

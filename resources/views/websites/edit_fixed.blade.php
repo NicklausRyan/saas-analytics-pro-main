@@ -1,5 +1,8 @@
+@extends('layouts.app')
+
 @section('site_title', formatTitle([__('Edit'), __('Website'), config('settings.title')]))
 
+@section('content')
 @include('shared.breadcrumbs', ['breadcrumbs' => [
     ['url' => request()->is('admin/*') ? route('admin.dashboard') : route('dashboard'), 'title' => request()->is('admin/*') ? __('Admin') : __('Home')],
     ['title' => __('Edit')],
@@ -25,12 +28,16 @@
         </div>
     </div>
     <div class="card-body">
-        @include('shared.message')        <form action="{{ request()->is('admin/*') ? route('admin.websites.edit', $website->id) : route('websites.edit', $website->id) }}" method="post" enctype="multipart/form-data" id="form-website">
+        @include('shared.message')
+
+        <form action="{{ request()->is('admin/*') ? route('admin.websites.edit', $website->id) : route('websites.edit', $website->id) }}" method="post" enctype="multipart/form-data" id="form-website">
             @csrf
 
             @if(request()->is('admin/*'))
                 <input type="hidden" name="user_id" value="{{ $website->user->id }}">
-            @endif            <!-- Tab Navigation - Styled as Compact Button Navbar -->
+            @endif
+
+            <!-- Tab Navigation - Styled as Compact Button Navbar -->
             <nav class="navbar navbar-expand-sm navbar-light bg-light dark-nav-tabs rounded mb-3 py-1 px-2">
                 <div class="btn-group w-100" role="group" id="website-tabs" aria-label="Website Configuration Options">
                     <button type="button" class="btn btn-xs btn-primary active website-tab-btn" id="domain-privacy-tab" data-toggle="tab" data-target="#domain-privacy" role="tab" aria-controls="domain-privacy" aria-selected="true">{{ __('Domain & Settings') }}</button>
@@ -38,7 +45,9 @@
                     <button type="button" class="btn btn-xs btn-secondary website-tab-btn" id="integration-tab" data-toggle="tab" data-target="#integration" role="tab" aria-controls="integration" aria-selected="false">{{ __('Integration') }}</button>
                     <button type="button" class="btn btn-xs btn-secondary website-tab-btn" id="script-tab" data-toggle="tab" data-target="#script" role="tab" aria-controls="script" aria-selected="false">{{ __('Script') }}</button>
                 </div>
-            </nav>            <style>
+            </nav>
+
+            <style>
                 /* Enhanced compact styling for website edit pages alignment */
                 .breadcrumb {
                     padding: 0.25rem 0 !important; /* Minimal padding for tighter layout */
@@ -333,7 +342,8 @@ document.addEventListener('DOMContentLoaded', function() {
             document.querySelectorAll('.tab-pane').forEach(function(pane) {
                 pane.classList.remove('show', 'active');
             });
-              // Add active class to current tab and show corresponding content
+
+            // Add active class to current tab and show corresponding content
             this.classList.add('active');
             this.classList.remove('btn-secondary');
             this.classList.add('btn-primary');
@@ -359,3 +369,4 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 });
 </script>
+@endsection

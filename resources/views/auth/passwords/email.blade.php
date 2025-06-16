@@ -18,11 +18,20 @@
             </div>
 
             <div class="row h-100 justify-content-center align-items-center mt-5 mt-lg-0">
-                <div class="col-12">
-                    <div class="card border-0 shadow-sm overflow-hidden">
-                        <div class="row no-gutters">
-                            <div class="col-12 col-lg-5">
-                                <div class="card-body p-lg-5">
+                <div class="col-12">                    <div class="card border-0 shadow-sm overflow-hidden">
+                        <div class="row no-gutters">                            <!-- Left panel - Welcome message -->
+                            <div class="col-12 col-lg-6 bg-primary d-none d-lg-flex flex-fill">
+                                <div class="card-body p-lg-5 d-flex flex-column justify-content-center align-items-center text-white">
+                                    <div>
+                                        <h1 class="h2 font-weight-bold mb-3">{{ Str::ucfirst(mb_strtolower(__('Reset Password'))) }}</h1>
+                                        <p class="font-weight-normal font-size-lg mb-0">{{ __('Get back your account.') }}</p>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Right panel - Form -->
+                            <div class="col-12 col-lg-6">
+                                <div class="card-body p-4 p-lg-5">
                                     @include('shared.message')
 
                                     @if (request()->session()->get('status'))
@@ -47,22 +56,7 @@
 
                                         <button type="submit" class="btn btn-block btn-primary">
                                             {{ __('Send Password Reset Link') }}
-                                        </button>
-                                    </form>
-                                </div>
-                            </div>
-                            <div class="col-12 col-lg-7 bg-dark d-none d-lg-flex flex-fill background-size-cover background-position-center" style="background-image: url({{ asset('images/password.svg') }})">
-                                <div class="card-body p-lg-5 d-flex flex-column flex-fill position-absolute top-0 right-0 bottom-0 left-0">
-                                    <div class="d-flex align-items-center d-flex flex-fill">
-                                        <div class="text-light {{ (__('lang_dir') == 'rtl' ? 'mr-5' : 'ml-5') }}">
-                                            <div class="h2 font-weight-bold">
-                                                {{ Str::ucfirst(mb_strtolower(__('Reset Password'))) }}
-                                            </div>
-                                            <div class="font-size-lg font-weight-medium">
-                                                {{ __('Get back your account.') }}
-                                            </div>
-                                        </div>
-                                    </div>
+                                        </button>                                    </form>
                                 </div>
                             </div>
                         </div>

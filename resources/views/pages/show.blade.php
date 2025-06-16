@@ -1,6 +1,6 @@
-@section('site_title', formatTitle([e($page['name']), config('settings.title')]))
-
 @extends('layouts.app')
+
+@section('site_title', formatTitle([e($page['name']), config('settings.title')]))
 
 @section('head_content')
 

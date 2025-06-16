@@ -24,24 +24,92 @@
 
         <form action="{{ route('websites.new') }}" method="post" enctype="multipart/form-data" id="form-website">
             @csrf
-            
-            <!-- Tab Navigation -->
-            <ul class="nav nav-tabs mb-3" id="website-tabs" role="tablist">
-                <li class="nav-item" role="presentation">
-                    <a class="nav-link active" id="basics-tab" data-toggle="tab" href="#basics" role="tab" aria-controls="basics" aria-selected="true">{{ __('Basics') }}</a>
-                </li>
-                <li class="nav-item" role="presentation">
-                    <a class="nav-link" id="filters-tab" data-toggle="tab" href="#filters" role="tab" aria-controls="filters" aria-selected="false">{{ __('Filters') }}</a>
-                </li>
-                <li class="nav-item" role="presentation">
-                    <a class="nav-link" id="integration-tab" data-toggle="tab" href="#integration" role="tab" aria-controls="integration" aria-selected="false">{{ __('Integration') }}</a>
-                </li>
-            </ul>
+
+            <!-- Tab Navigation - Styled as Compact Button Navbar -->
+            <nav class="navbar navbar-expand-sm navbar-light bg-light dark-nav-tabs rounded mb-3 py-1 px-2">
+                <div class="btn-group w-100" role="group" id="website-tabs" aria-label="Website Configuration Options">
+                    <button type="button" class="btn btn-xs btn-primary active website-tab-btn" id="domain-privacy-tab" data-toggle="tab" data-target="#domain-privacy" role="tab" aria-controls="domain-privacy" aria-selected="true">{{ __('Domain & Settings') }}</button>
+                    <button type="button" class="btn btn-xs btn-secondary website-tab-btn" id="exclusions-tab" data-toggle="tab" data-target="#exclusions" role="tab" aria-controls="exclusions" aria-selected="false">{{ __('Exclusions') }}</button>
+                    <button type="button" class="btn btn-xs btn-secondary website-tab-btn" id="integration-tab" data-toggle="tab" data-target="#integration" role="tab" aria-controls="integration" aria-selected="false">{{ __('Integration') }}</button>
+                    <button type="button" class="btn btn-xs btn-secondary website-tab-btn" id="script-tab" data-toggle="tab" data-target="#script" role="tab" aria-controls="script" aria-selected="false">{{ __('Script') }}</button>
+                </div>
+            </nav>
+
+            <style>
+                /* Enhanced compact styling for website new pages alignment */
+                .breadcrumb {
+                    padding: 0.25rem 0 !important; /* Minimal padding for tighter layout */
+                    margin-bottom: 0.25rem !important; /* Reduced margin for optimal spacing */
+                }
+                
+                /* Ultra-compact light mode styles for website tabs */
+                .dark-nav-tabs {
+                    background-color: #f8f9fa !important;
+                    border: none !important;
+                    box-shadow: none !important;
+                }
+                
+                .website-tab-btn {
+                    border: none !important;
+                    outline: none !important;
+                    box-shadow: none !important;
+                    padding: 0.25rem 0.5rem !important; /* Ultra-compact padding */
+                    font-size: 0.8rem !important; /* Smaller font for compact look */
+                    line-height: 1.2 !important; /* Tighter line height */
+                }
+                
+                .website-tab-btn:focus,
+                .website-tab-btn:active,
+                .website-tab-btn.active {
+                    outline: none !important;
+                    box-shadow: none !important;
+                }
+                
+                /* Ultra-compact dark mode styles for website tabs */
+                html.dark .dark-nav-tabs {
+                    background-color: #282828 !important;
+                    border: none !important;
+                    box-shadow: none !important;
+                }
+                
+                html.dark .website-tab-btn {
+                    color: #fff !important;
+                    border: none !important;
+                    outline: none !important;
+                    box-shadow: none !important;
+                    padding: 0.25rem 0.5rem !important; /* Ultra-compact padding for dark mode */
+                    font-size: 0.8rem !important; /* Smaller font for dark mode compact look */
+                    line-height: 1.2 !important; /* Tighter line height for dark mode */
+                }
+                
+                html.dark .btn-secondary.website-tab-btn {
+                    background-color: #3b3b3b !important;
+                    border: none !important;
+                    outline: none !important;
+                }
+                
+                html.dark .btn-primary.website-tab-btn {
+                    background-color: #70a8ff !important;
+                    border: none !important;
+                    outline: none !important;
+                }
+                
+                html.dark .website-tab-btn:hover {
+                    background-color: #4a5568 !important;
+                }
+                
+                html.dark .website-tab-btn:focus,
+                html.dark .website-tab-btn:active,
+                html.dark .website-tab-btn.active {
+                    outline: none !important;
+                    box-shadow: none !important;
+                }
+            </style>
             
             <!-- Tab Content -->
             <div class="tab-content" id="website-tab-content">
-                <!-- Tab 1: Basics (Domain, Privacy, Notifications) -->
-                <div class="tab-pane fade show active" id="basics" role="tabpanel" aria-labelledby="basics-tab">
+                <!-- Tab 1: Domain, Notifications, and Privacy -->
+                <div class="tab-pane fade show active" id="domain-privacy" role="tabpanel" aria-labelledby="domain-privacy-tab">
                     <div class="form-group">
                         <label for="i-domain">{{ __('Domain') }}</label>
                         <input type="text" dir="ltr" name="domain" class="form-control{{ $errors->has('domain') ? ' is-invalid' : '' }}" id="i-domain" value="{{ old('domain') }}" placeholder="example.com">
@@ -51,7 +119,36 @@
                             </span>
                         @endif
                         <small class="form-text form-text text-muted w-100">{{ __('Add a domain or subdomain.') }}</small>
-                    </div>            
+                    </div>
+
+                    <hr>
+
+                    <div class="form-group">
+                        <div class="row mx-n2">
+                            <div class="col-12 col-lg-4 px-2">
+                                <div class="form-group mb-0">
+                                    <div class="row">
+                                        <div class="col"><label>{{ __('Notifications') }}</label></div>
+                                        <div class="col-auto">
+                                            @cannot('emailReports', ['App\Models\User'])
+                                                @if(paymentProcessors())
+                                                    <a href="{{ route('pricing') }}" data-tooltip="true" title="{{ __('Unlock feature') }}">@include('icons.lock-open', ['class' => 'fill-current text-primary width-4 height-4'])</a>
+                                                @endif
+                                            @endcannot
+                                        </div>
+                                    </div>
+
+                                    <div class="custom-control custom-checkbox">
+                                        <input type="checkbox" name="email" value="1" class="custom-control-input {{ $errors->has('email') ? ' is-invalid' : '' }}" id="customCheckbox2" @if(old('email')) checked @endif @cannot('emailReports', ['App\Models\User']) disabled @endcannot>
+                                        <label class="custom-control-label cursor-pointer" for="customCheckbox2">
+                                            <div>{{ __('Email') }}</div>
+                                            <div class="small text-muted">{{ __('Periodic email reports.') }}</div>
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
 
                     <hr>
 
@@ -86,7 +183,8 @@
                                             <span>{{ __('Password') }}</span>
                                             <span class="small text-muted">{{ __('Stats accessible by password.') }}</span>
                                         </label>
-                                        <div id="input-password" class="{{ (old('privacy') != 2 ? 'd-none' : '')}}">
+
+                                        <div id="input-password" class="{{ (old('privacy') == 2 ? '' : 'd-none')}}">
                                             <div class="input-group mt-2">
                                                 <div class="input-group-prepend">
                                                     <div class="input-group-text cursor-pointer" data-tooltip="true" data-title="{{ __('Show password') }}" data-password="i-password" data-password-show="{{ __('Show password') }}" data-password-hide="{{ __('Hide password') }}">@include('icons.lock', ['class' => 'width-4 height-4 fill-current text-muted'])</div>
@@ -94,9 +192,9 @@
                                                 <input id="i-password" type="password" class="form-control{{ $errors->has('password') ? ' is-invalid' : '' }}" name="password" value="{{ old('password') }}" autocomplete="new-password">
                                             </div>
                                             @if ($errors->has('password'))
-                                                <span class="invalid-feedback d-block" role="alert">
-                                                    <strong>{{ $errors->first('password') }}</strong>
-                                                </span>
+                                            <span class="invalid-feedback d-block" role="alert">
+                                                <strong>{{ $errors->first('password') }}</strong>
+                                            </span>
                                             @endif
                                         </div>
                                     </div>
@@ -109,52 +207,18 @@
                             @endif
                         </div>
                     </div>
-
-                    <hr>
-
-                    <div class="form-group">
-                        <div class="row mx-n2">
-                            <div class="col-12 col-lg-4 px-2">
-                                <div class="form-group mb-0">
-                                    <div class="row">
-                                        <div class="col"><label>{{ __('Notifications') }}</label></div>
-                                        <div class="col-auto">
-                                            @cannot('emailReports', ['App\Models\User'])
-                                                @if(paymentProcessors())
-                                                    <a href="{{ route('pricing') }}" data-tooltip="true" title="{{ __('Unlock feature') }}">@include('icons.lock-open', ['class' => 'fill-current text-primary width-4 height-4'])</a>
-                                                @endif
-                                            @endcannot
-                                        </div>
-                                    </div>
-
-                                    <div class="custom-control custom-checkbox">
-                                        <input type="checkbox" name="email" value="1" class="custom-control-input {{ $errors->has('email') ? ' is-invalid' : '' }}" id="customCheckbox2" @if(old('email')) checked @endif @cannot('emailReports', ['App\Models\User']) disabled @endcannot>
-                                        <label class="custom-control-label cursor-pointer" for="customCheckbox2">
-                                            <div>{{ __('Email') }}</div>
-                                            <div class="small text-muted">{{ __('Periodic email reports.') }}</div>
-                                            @if ($errors->has('email'))
-                                                <span class="invalid-feedback d-block" role="alert">
-                                                    <strong>{{ $errors->first('email') }}</strong>
-                                                </span>
-                                            @endif
-                                        </label>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
                 </div>
                 
-                <!-- Tab 2: Filters (Exclude URL query parameters, Exclude IPs, and exclude bots) -->
-                <div class="tab-pane fade" id="filters" role="tabpanel" aria-labelledby="filters-tab">
+                <!-- Tab 2: Exclude URL query parameters, Exclude IPs, and exclude bots -->
+                <div class="tab-pane fade" id="exclusions" role="tabpanel" aria-labelledby="exclusions-tab">
                     <div class="row mx-n2">
                         <div class="col-12 col-md-6 px-2">
                             <div class="form-group">
-                                <label for="i-exclude-ips" class="d-flex align-items-center">{{ __('Exclude IPs') }} <span data-tooltip="true" title="{{ __('To block entire IP classes, use the CIDR notation.') }}" class="d-flex align-items-center {{ (__('lang_dir') == 'rtl' ? 'mr-2' : 'ml-2') }}">@include('icons.info', ['class' => 'fill-current text-muted width-4 height-4'])</span></label>
-                                <textarea name="exclude_ips" id="i-exclude-ips" class="form-control{{ $errors->has('exclude_ips') ? ' is-invalid' : '' }}">{{ old('exclude_ips') }}</textarea>
-                                @if ($errors->has('exclude_ips'))
+                                <label for="i-exclude-params">{{ __('Exclude URL query parameters') }}</label>
+                                <textarea name="exclude_params" id="i-exclude-params" class="form-control{{ $errors->has('exclude_params') ? ' is-invalid' : '' }}">{{ old('exclude_params') }}</textarea>
+                                @if ($errors->has('exclude_params'))
                                     <span class="invalid-feedback" role="alert">
-                                        <strong>{{ $errors->first('exclude_ips') }}</strong>
+                                        <strong>{{ $errors->first('exclude_params') }}</strong>
                                     </span>
                                 @endif
                                 <small class="form-text text-muted">{{ __('One per line.') }}</small>
@@ -163,11 +227,11 @@
 
                         <div class="col-12 col-md-6 px-2">
                             <div class="form-group">
-                                <label for="i-exclude-params">{{ __('Exclude URL query parameters') }}</label>
-                                <textarea name="exclude_params" id="i-exclude-params" class="form-control{{ $errors->has('exclude_params') ? ' is-invalid' : '' }}">{{ old('exclude_params') }}</textarea>
-                                @if ($errors->has('exclude_params'))
+                                <label for="i-exclude-ips" class="d-flex align-items-center">{{ __('Exclude IPs') }} <span data-tooltip="true" title="{{ __('To block entire IP classes, use the CIDR notation.') }}" class="d-flex align-items-center {{ (__('lang_dir') == 'rtl' ? 'mr-2' : 'ml-2') }}">@include('icons.info', ['class' => 'fill-current text-muted width-4 height-4'])</span></label>
+                                <textarea name="exclude_ips" id="i-exclude-ips" class="form-control{{ $errors->has('exclude_ips') ? ' is-invalid' : '' }}">{{ old('exclude_ips') }}</textarea>
+                                @if ($errors->has('exclude_ips'))
                                     <span class="invalid-feedback" role="alert">
-                                        <strong>{{ $errors->first('exclude_params') }}</strong>
+                                        <strong>{{ $errors->first('exclude_ips') }}</strong>
                                     </span>
                                 @endif
                                 <small class="form-text text-muted">{{ __('One per line.') }}</small>
@@ -192,7 +256,7 @@
                     </div>
                 </div>
                 
-                <!-- Tab 3: Integration (Stripe API Key and Script) -->
+                <!-- Tab 3: Stripe API Key -->
                 <div class="tab-pane fade" id="integration" role="tabpanel" aria-labelledby="integration-tab">
                     <div class="form-group">
                         <div class="row">
@@ -216,10 +280,12 @@
                         </div>
                         <small class="form-text text-muted">{{ __('Enter your Stripe restricted API key to connect revenue tracking. Use a key with limited permissions for security.') }}</small>
                     </div>
-
-                    <hr>
-
+                </div>
+                
+                <!-- Tab 4: Script -->
+                <div class="tab-pane fade" id="script" role="tabpanel" aria-labelledby="script-tab">
                     <div class="form-group">
+                        <label class="d-block">{{ __('Tracking Script') }}</label>
                         @include('shared.tracking-code')
                     </div>
                 </div>
@@ -234,6 +300,38 @@
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
+    // Tab functionality
+    var tabButtons = document.querySelectorAll('#website-tabs button');
+    tabButtons.forEach(function(tabButton) {
+        tabButton.addEventListener('click', function(e) {
+            e.preventDefault();
+            
+            // Remove active class from all tabs and hide all tab content
+            document.querySelectorAll('#website-tabs button').forEach(function(btn) {
+                btn.classList.remove('active');
+                btn.classList.remove('btn-primary');
+                btn.classList.add('btn-secondary');
+                btn.setAttribute('aria-selected', 'false');
+            });
+            
+            document.querySelectorAll('.tab-pane').forEach(function(pane) {
+                pane.classList.remove('show', 'active');
+            });
+
+            // Add active class to current tab and show corresponding content
+            this.classList.add('active');
+            this.classList.remove('btn-secondary');
+            this.classList.add('btn-primary');
+            this.style.outline = 'none';
+            this.style.boxShadow = 'none';
+            this.setAttribute('aria-selected', 'true');
+            
+            var targetSelector = this.getAttribute('data-target');
+            var targetPane = document.querySelector(targetSelector);
+            targetPane.classList.add('show', 'active');
+        });
+    });
+    
     // Password protection toggle
     document.querySelectorAll('input[name="privacy"]').forEach(function(radio) {
         radio.addEventListener('change', function() {
@@ -246,3 +344,4 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 });
 </script>
+@endsection
