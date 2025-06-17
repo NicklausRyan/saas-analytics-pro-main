@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tracking Test - wh1451867.ispot.cc</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .status {
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 5px;
+            border-left: 4px solid #28a745;
+            background-color: #d4edda;
+            color: #155724;
+        }
+        .test-button {
+            background-color: #007bff;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 10px;
+        }
+        .test-button:hover {
+            background-color: #0056b3;
+        }
+        #console-output {
+            background-color: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 5px;
+            padding: 15px;
+            margin-top: 20px;
+            font-family: monospace;
+            white-space: pre-wrap;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎯 SaaS Analytics Pro - Tracking Test</h1>
+        
+        <div class="status">
+            <strong>✅ Tracking Status:</strong> Initialized and ready to track
+        </div>
+        
+        <h2>Website Information</h2>
+        <ul>
+            <li><strong>Domain:</strong> wh1451867.ispot.cc</li>
+            <li><strong>Analytics Endpoint:</strong> https://wh1451867.ispot.cc/api/event</li>
+            <li><strong>Dashboard URL:</strong> <a href="https://wh1451867.ispot.cc/stats/wh1451867.ispot.cc" target="_blank">View Analytics Dashboard</a></li>
+        </ul>
+        
+        <h2>Test Tracking Events</h2>
+        <p>Click the buttons below to test different tracking events:</p>
+        
+        <button class="test-button" onclick="testPageView()">Test Page View</button>
+        <button class="test-button" onclick="testCustomEvent()">Test Custom Event</button>
+        <button class="test-button" onclick="testMultipleEvents()">Test Multiple Events</button>
+        <button class="test-button" onclick="clearConsole()">Clear Console</button>
+        
+        <h3>Console Output:</h3>
+        <div id="console-output">Ready to track events...\n</div>
+    </div>
+
+    <!-- SaaS Analytics Pro Tracking Script -->
+    <script data-host="https://wh1451867.ispot.cc" data-dnt="false" src="https://wh1451867.ispot.cc/js/script.js" id="ZwSg9rf6GA" async defer></script>
+
+    <script>
+        const consoleOutput = document.getElementById('console-output');
+        
+        function log(message) {
+            const timestamp = new Date().toLocaleTimeString();
+            consoleOutput.textContent += `[${timestamp}] ${message}\n`;
+            consoleOutput.scrollTop = consoleOutput.scrollHeight;
+        }
+        
+        function clearConsole() {
+            consoleOutput.textContent = 'Console cleared...\n';
+        }
+        
+        function testPageView() {
+            log('🔄 Testing manual page view tracking...');
+            if (typeof pa !== 'undefined' && pa.track) {
+                pa.track();
+                log('✅ Page view event sent successfully');
+            } else {
+                log('❌ Analytics tracker not loaded');
+            }
+        }
+        
+        function testCustomEvent() {
+            log('🔄 Testing custom event tracking...');
+            if (typeof pa !== 'undefined' && pa.track) {
+                pa.track({
+                    name: 'Button Click',
+                    value: 1,
+                    unit: 'click'
+                });
+                log('✅ Custom event "Button Click" sent successfully');
+            } else {
+                log('❌ Analytics tracker not loaded');
+            }
+        }
+        
+        function testMultipleEvents() {
+            log('🔄 Testing multiple events...');
+            if (typeof pa !== 'undefined' && pa.track) {
+                const events = [
+                    { name: 'Test Event 1', value: 10, unit: 'points' },
+                    { name: 'Test Event 2', value: 25, unit: 'score' },
+                    { name: 'Test Event 3' }
+                ];
+                
+                events.forEach((event, index) => {
+                    setTimeout(() => {
+                        pa.track(event);
+                        log(`✅ Event ${index + 1}: "${event.name}" sent successfully`);
+                    }, index * 500);
+                });
+            } else {
+                log('❌ Analytics tracker not loaded');
+            }
+        }
+        
+        // Monitor script loading
+        window.addEventListener('load', function() {
+            setTimeout(() => {
+                if (typeof pa !== 'undefined' && pa.track) {
+                    log('✅ SaaS Analytics Pro tracking script loaded successfully');
+                    log('🎯 Automatic page view tracking should be active');
+                } else {
+                    log('❌ SaaS Analytics Pro tracking script failed to load');
+                    log('🔍 Check browser console for errors');
+                }
+            }, 1000);
+        });
+        
+        // Log initial page load
+        log('🚀 Test page loaded, waiting for tracking script...');
+    </script>
+</body>
+</html>
